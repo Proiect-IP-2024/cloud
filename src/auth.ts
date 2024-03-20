@@ -1,5 +1,7 @@
 import mysql from "mysql";
 import express, { Request, Response } from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { User } from "./modules/interfaces";
 
 const app = express();
@@ -15,7 +17,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
 });
 
-app.post("/user/createUser", (req: Request, res: Response) => {
+app.post("/user/createUser", async (req: Request, res: Response) => {
   try {
     const userData: User | null = req.body?.userData;
 
@@ -37,22 +39,41 @@ app.post("/user/createUser", (req: Request, res: Response) => {
         return res.status(500).send("Connection error");
       }
 
-      //Insert user to database
       conn.query(
-        `INSERT INTO users SET = ?`,
-        {
-          FirstName: userData.firstName,
-          LastName: userData.lastName,
-          Password: userData.password,
-          Email: userData.email,
-        },
-        (error, rows) => {
+        `SELECT FirstName FROM users WHERE email = ? `,
+        [userData.email],
+        async (err, rows) => {
           conn.release();
-          if (error) {
-            console.log(error);
+          if (err) {
+            console.error(err);
             return res.sendStatus(500);
           }
-          return res.sendStatus(201);
+
+          if (rows[0] !== undefined) {
+            return res.status(500).send("User already exists");
+          }
+
+          //hashing password
+          const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+          //Insert user to database
+          conn.query(
+            `INSERT INTO users SET = ?`,
+            {
+              FirstName: userData.firstName,
+              LastName: userData.lastName,
+              Password: hashedPassword,
+              Email: userData.email,
+            },
+            (error, rows) => {
+              conn.release();
+              if (error) {
+                console.error(error);
+                return res.sendStatus(500);
+              }
+              return res.sendStatus(201);
+            }
+          );
         }
       );
     });
