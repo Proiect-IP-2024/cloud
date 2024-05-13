@@ -1,0 +1,6 @@
+name: cloud-service
+recipe: drupal8
+config:
+  webroot: .
+  via: nginx
+  database: mariadb:10.1

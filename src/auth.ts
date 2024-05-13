@@ -11,10 +11,10 @@ app.use(express.json());
 const PORT = process.env.AUTH_SERVER_PORT || 3000;
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
 });
 
 app.post("/user/createUser", async (req: Request, res: Response) => {
