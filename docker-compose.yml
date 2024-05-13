@@ -11,7 +11,7 @@ services:
     expose:
       - "3306"
     volumes:
-      - my-db:/var/lib/mysql
+      - ./database_dump.sql:/docker-entrypoint-initdb.d/datadump.sql
     networks:
       - mysql-phpmyadmin
 
@@ -27,9 +27,6 @@ services:
         required: true
     networks:
       - mysql-phpmyadmin
-
-volumes:
-  my-db:
 
 networks:
   mysql-phpmyadmin:
