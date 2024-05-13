@@ -12,5 +12,24 @@ services:
       - "3306"
     volumes:
       - my-db:/var/lib/mysql
+    networks:
+      - mysql-phpmyadmin
+
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 80:80
+    env_file:
+      - path: .env
+        required: true
+    networks:
+      - mysql-phpmyadmin
+
 volumes:
   my-db:
+
+networks:
+  mysql-phpmyadmin:
