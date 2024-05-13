@@ -40,16 +40,17 @@ app.post("/user/createUser", async (req: Request, res: Response) => {
       }
 
       conn.query(
-        `SELECT FirstName FROM users WHERE email = ? `,
+        `SELECT email FROM Users WHERE email = ? `,
         [userData.email],
         async (err, rows) => {
-          conn.release();
           if (err) {
+            conn.release(); // Release connection in case of error
             console.error(err);
             return res.sendStatus(500);
           }
 
           if (rows[0] !== undefined) {
+            conn.release(); // Release connection if user already exists
             return res.status(500).send("User already exists");
           }
 
@@ -58,15 +59,15 @@ app.post("/user/createUser", async (req: Request, res: Response) => {
 
           //Insert user to database
           conn.query(
-            `INSERT INTO users SET = ?`,
+            `INSERT INTO Users SET ?`, // Removed the equal sign after SET
             {
-              FirstName: userData.firstName,
-              LastName: userData.lastName,
-              Password: hashedPassword,
-              Email: userData.email,
+              first_name: userData.firstName,
+              last_name: userData.lastName,
+              email: userData.email,
+              password_hash: hashedPassword,
             },
             (error, rows) => {
-              conn.release();
+              conn.release(); // Release connection after second query
               if (error) {
                 console.error(error);
                 return res.sendStatus(500);
