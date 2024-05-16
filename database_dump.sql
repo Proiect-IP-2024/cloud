@@ -108,6 +108,7 @@ CREATE TABLE `Alerta_Supraveghetor` (
   `data_si_ora_bifata` datetime
 );
 
+/*
 CREATE TABLE `Senzor_ecg` (
   `ID_ecg` integer PRIMARY KEY,
   `CNP_pacient` varchar(13),
@@ -133,6 +134,23 @@ CREATE TABLE `Senzor_puls` (
   `validitate_puls` integer,
   `timestamp` date,
   `CUI` varchar(10)
+);
+*/
+
+/*
+"INSERT INTO senzori (puls, temperatura, concentratie_gaz, miscare, lumina)
+ VALUES (%d, %f, %f, %d, %d, %d)", humidity, temperature, gasConcentration, pirState, light, mappedPulse);
+*/
+CREATE TABLE `Senzori`(
+`ID_inregistrare` integer PRIMARY KEY,
+`CNP_pacient` varchar(13) NOT NULL,
+`umiditate` integer,
+`puls` integer,
+`temperatura` integer,
+`concentratie_gaz` float,
+`proximitate` boolean,
+`lumina` integer,
+`timestamp` datetime
 );
 
 CREATE TABLE `Users` (
@@ -170,14 +188,15 @@ ALTER TABLE `Schema_medicamentatie` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `
 ALTER TABLE `Consult` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
 ALTER TABLE `Alerta_automata` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
-
+/*
 ALTER TABLE `Senzor_ecg` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
 ALTER TABLE `Senzor_temperatura` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
 ALTER TABLE `Senzor_puls` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
+*/
 
-
+ALTER TABLE `Senzori` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
 INSERT INTO `Users` (`id`, `first_name`, `last_name`, `email`, `password_hash`) VALUES
 (2, 'test', 'test', 'test@test.com', '$2b$10$dfDF6kGjZpMf.Yqt43xE.emJobspEO3DO.4Py.WzVi403.I49jRy6'),
