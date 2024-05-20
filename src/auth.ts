@@ -2,7 +2,8 @@ import mysql from "mysql";
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { Pacient, User, UserToken } from "./modules/interfaces";
+import { Pacient, Recomandare, User, UserToken } from "./modules/interfaces";
+import { getUserType, isMedic } from "./utils/utils";
 
 const app = express();
 
@@ -356,7 +357,7 @@ app.delete("/user/removeAdmin", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/user/isAdmin", async (req: Request, res: Response) => {
+app.get("/user/getUserType", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
 
@@ -369,30 +370,25 @@ app.get("/user/isAdmin", async (req: Request, res: Response) => {
         return res.status(403).send("Invalid token");
       }
 
-      pool.getConnection((error: any, conn) => {
+      pool.getConnection(async (error: any, conn) => {
         if (error) {
           return res.status(500).send("Connection error");
         }
 
-        conn.query(
-          `SELECT * FROM ADMIN WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
+        const userTypeResp = await getUserType(user, conn);
 
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(200).send({ isAdmin: false });
-            }
-
-            conn.release();
-            return res.status(200).send({ isAdmin: true });
+        if (userTypeResp.ok) {
+          conn.release();
+          return res.status(200).send(userTypeResp.userType);
+        } else {
+          conn.release();
+          if (userTypeResp.status && userTypeResp.userType && userTypeResp.message) {
+            return res.status(userTypeResp.status).send({ userType: userTypeResp.userType, message: userTypeResp.message });
+          } else {
+            return res.status(403).send('Forbidden');
           }
-        );
+        }
+
       });
     });
   } catch (e) {
@@ -755,8 +751,6 @@ app.post("/user/addPacient", async (req: Request, res: Response) => {
             telefon_pacient: userData.telefon_pacient,
             profesie_pacient: userData.profesie_pacient,
             loc_munca_pacient: userData.loc_munca_pacient,
-            id_medic: 4,
-
           },
           async (err, rows) => {
             if (err) {
@@ -865,7 +859,7 @@ app.delete("/user/deletePacient", async (req: Request, res: Response) => {
 app.post("/user/addIngrijitor", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    
+
     if (!token) {
       return res.status(400).send("Invalid token");
     }
@@ -885,7 +879,7 @@ app.post("/user/addIngrijitor", async (req: Request, res: Response) => {
           `INSERT INTO Ingrijitor SET ?`,
           {
             id: user.id,
-           
+
           },
           async (err, rows) => {
             if (err) {
@@ -905,7 +899,7 @@ app.post("/user/addIngrijitor", async (req: Request, res: Response) => {
     return res.sendStatus(500);
   }
 });
-app.get("/user/getIngrijitorData", async (req: Request, res: Response) => { 
+app.get("/user/getIngrijitorData", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     console.log(token);
@@ -990,6 +984,179 @@ app.delete("/user/deleteIngrijitor", async (req: Request, res: Response) => {
     return res.sendStatus(500);
   }
 });
+
+app.post("/user/addMedicToPacient", async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const userData: { id_pacient: number } | null = req.body?.userData;
+
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    if (!(userData && userData?.id_pacient)) {
+      return res.status(400).send("Invalid data!");
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
+      if (err) {
+        return res.status(403).send("Invalid token");
+      }
+
+      pool.getConnection(async (error: any, conn) => {
+        if (error) {
+          return res.status(500).send("Connection error");
+        }
+
+        conn.query(
+          `UPDATE Pacient SET id_medic = ? WHERE id = ? `,
+          [user.id, userData.id_pacient],
+          async (err, rows) => {
+            if (err) {
+              conn.release();
+              console.error(err);
+              return res.sendStatus(500);
+            }
+
+            conn.release();
+            return res.status(200).send("Medic added to pacient");
+          }
+        );
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    return res.sendStatus(500);
+  }
+});
+app.get("/user/isTokenValid", async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
+      if (err) {
+        return res.status(403).send("Invalid token");
+      }
+
+      return res.status(200).send("Token is valid");
+    });
+  } catch (e) {
+    console.error(e);
+    return res.sendStatus(500);
+  }
+});
+app.post("/user/setRecomandareMedic", async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const userData: Recomandare | null = req.body?.userData;
+
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    if (!(userData && userData?.id_recomandare && userData?.CNP_pacient && userData?.tip_recomandare && userData?.durata_zilnica && userData?.alte_indicatii && userData?.tratamente)) {
+      return res.status(400).send("Invalid data!");
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
+      if (err) {
+        return res.status(403).send("Invalid token");
+      }
+
+      pool.getConnection(async (error: any, conn) => {
+        if (error) {
+          return res.status(500).send("Connection error");
+        }
+
+        const isMedicResp = await isMedic(user, conn);
+
+        if (!isMedicResp) {
+          conn.release();
+          return res.status(403).send("User is not medic");
+        }
+
+        conn.query(
+          `Insert INTO Recomadare_medic SET ? `,
+          {
+            id_recomandare: userData.id_recomandare,
+            CNP_pacient: userData.CNP_pacient,
+            tip_recomandare: userData.tip_recomandare,
+            durata_zilnica: userData.durata_zilnica,
+            alte_indicatii: userData.alte_indicatii,
+            tratamente: userData.tratamente,
+
+          },
+          //[user.id],
+          async (err, rows) => {
+            if (err) {
+              conn.release();
+              console.error(err);
+              return res.sendStatus(500);
+            }
+
+            conn.release();
+            return res.status(200).send("Recomandare added");
+          }
+        );
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    return res.sendStatus(500);
+  }
+});
+
+app.get("/user/getRecomandareMedic", async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
+      if (err) {
+        return res.status(403).send("Invalid token");
+      }
+
+      pool.getConnection((error: any, conn) => {
+        if (error) {
+          return res.status(500).send("Connection error");
+        }
+
+        conn.query(
+          `SELECT recomandare FROM Pacient WHERE id = ?`,
+          [user.id],
+          async (err, rows) => {
+            if (err) {
+              conn.release();
+              console.error(err);
+              return res.sendStatus(500);
+            }
+
+            if (rows[0] === undefined) {
+              conn.release();
+              return res.status(500).send("Pacient not found");
+            }
+
+            const recomandare = rows[0];
+
+            conn.release();
+            return res.status(200).send({ recomandare });
+          }
+        );
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    return res.sendStatus(500);
+  }
+});
+
 
 app.listen(PORT, () => {
   return console.log(`\nAUTH server is listening at PORT: ${PORT}`);
