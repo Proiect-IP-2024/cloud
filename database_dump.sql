@@ -84,7 +84,7 @@ CREATE TABLE `Schema_medicamentatie` (
 
 CREATE TABLE `Recomadare_medic` (
   `id_recomandare` integer PRIMARY KEY,
-  `CNP_pacient` varchar(13) NOT NULL,
+  `CNP_pacient` varchar(20) NOT NULL,
   `tip_recomandare` varchar(50) NOT NULL,
   `durata_zilnica` integer,
   `alte_indicatii` text,

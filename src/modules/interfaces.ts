@@ -1,6 +1,6 @@
 
 export interface UserToken {
-  id: string;
+  id: number;
   email: string;
 }
 
@@ -43,3 +43,16 @@ interface Consult {
   glicemie?: number;
   greutate?: number;
 }
+
+export interface Recomandare
+{
+ 
+  id_recomandare: number;
+  CNP_pacient: string;
+  tip_recomandare: string;
+  durata_zilnica?: number;
+  alte_indicatii?: string;
+  tratamente?: string;
+}
+
+
