@@ -1,6 +1,6 @@
 
 export interface UserToken {
-  id: string;
+  id: number;
   email: string;
 }
 
@@ -27,3 +27,16 @@ export interface Pacient {
   profesie_pacient: string;
   loc_munca_pacient: string;
 }
+
+export interface Recomandare
+{
+ 
+  id_recomandare: number;
+  CNP_pacient: string;
+  tip_recomandare: string;
+  durata_zilnica?: number;
+  alte_indicatii?: string;
+  tratamente?: string;
+}
+
+
