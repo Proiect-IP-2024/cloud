@@ -156,6 +156,13 @@ app.get("/user/refreshToken", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
+    // Decode the token to get the payload without verifying it
+    const decodedToken = jwt.decode(token) as UserToken;
+
+    if (!decodedToken) {
+      return res.status(400).send("Invalid token");
+    }
+
     jwt.verify(
       token,
       process.env.JWT_SECRET || "secret",
@@ -164,9 +171,10 @@ app.get("/user/refreshToken", async (req: Request, res: Response) => {
           if (err.name !== "TokenExpiredError") {
             return res.status(403).send("Invalid token");
           }
-
+          
+          // Token is expired, create a new one using the decoded payload
           const newToken = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: decodedToken.id, email: decodedToken.email },
             process.env.JWT_SECRET || "secret",
             {
               expiresIn: "1h",
@@ -175,6 +183,7 @@ app.get("/user/refreshToken", async (req: Request, res: Response) => {
           return res.status(200).send({ token: newToken });
         }
 
+        // Token is valid, create a new one using the verified payload
         const newToken = jwt.sign(
           { id: user.id, email: user.email },
           process.env.JWT_SECRET || "secret",
@@ -191,6 +200,7 @@ app.get("/user/refreshToken", async (req: Request, res: Response) => {
     return res.sendStatus(500);
   }
 });
+
 
 app.get("/user/getUserData", async (req: Request, res: Response) => {
   try {
@@ -977,7 +987,6 @@ app.post("/user/addIngrijitor", async (req: Request, res: Response) => {
 app.get("/user/getIngrijitorData", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    console.log(token);
     if (!token) {
       return res.status(400).send("Invalid token");
     }
