@@ -1,139 +1,144 @@
 import { UserToken } from "../modules/interfaces";
 
 interface Response {
-    ok: boolean;
-    status?: number;
-    message?: any;
+  ok: boolean;
+  status?: number;
+  message?: any;
 }
 
-
 interface ResponseUserType extends Response {
-    userType: {
-        isMedic: boolean;
-        isAdmin: boolean;
-        isIngrijitor: boolean;
-        isPacient: boolean;
-    }
+  userType: {
+    isMedic: boolean;
+    isAdmin: boolean;
+    isIngrijitor: boolean;
+    isPacient: boolean;
+  };
 }
 
 const isAdmin = (user: UserToken, conn: any) => {
-    return new Promise<Response>((resolve, reject) => {
-        conn.query(
-            `SELECT * FROM ADMIN WHERE id = ?`,
-            [user.id],
-            async (err, rows) => {
-                if (err) {
-                    console.error(err);
-                    reject(500);
-                }
+  return new Promise<Response>((resolve, reject) => {
+    conn.query(
+      `SELECT * FROM ADMIN WHERE id = ?`,
+      [user.id],
+      async (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(500);
+        }
 
-                if (rows[0] === undefined) {
-                    resolve({ ok: false, status: 403, message: 'Forbidden' });
-                }
+        if (rows[0] === undefined) {
+          resolve({ ok: false, status: 403, message: "Forbidden" });
+        }
 
-                resolve({ ok: true });
-            }
-        );
-
-    });
+        resolve({ ok: true });
+      }
+    );
+  });
 };
 
 const isMedic = (user: UserToken, conn: any) => {
-    return new Promise<Response>((resolve, reject) => {
-        conn.query(
-            `SELECT id FROM Medic WHERE id = ?`,
-            [user.id],
-            async (err: Error, rows: any[]) => {
-                if (err) {
-                    console.error(err);
-                    reject(500);
-                }
+  return new Promise<Response>((resolve, reject) => {
+    conn.query(
+      `SELECT id FROM Medic WHERE id = ?`,
+      [user.id],
+      async (err: Error, rows: any[]) => {
+        if (err) {
+          console.error(err);
+          reject(500);
+        }
 
-                if (rows[0] === undefined) {
-                    resolve({ ok: false, status: 403, message: 'Forbidden' });
-                }
+        if (rows[0] === undefined) {
+          resolve({ ok: false, status: 403, message: "Forbidden" });
+        }
 
-                resolve({ ok: true });
-            }
-        );
-
-    });
-}
-
+        resolve({ ok: true });
+      }
+    );
+  });
+};
 
 const getUserType = (user: UserToken, conn: any) => {
+  var userType = {
+    isAdmin: false,
+    isMedic: false,
+    isIngrijitor: false,
+    isPacient: false,
+  };
 
-    var userType = { isAdmin: false, isMedic: false, isIngrijitor: false, isPacient: false };
+  return new Promise<ResponseUserType>((resolve, reject) => {
+    conn.query(
+      `SELECT * FROM Admin WHERE id = ?`,
+      [user.id],
+      async (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(500);
+        }
 
-    return new Promise<ResponseUserType>((resolve, reject) => {
+        if (rows[0] === undefined) {
+          userType.isAdmin = false;
+        } else {
+          userType.isAdmin = true;
+          resolve({ ok: true, userType });
+        }
+
         conn.query(
-            `SELECT * FROM ADMIN WHERE id = ?`,
-            [user.id],
-            async (err, rows) => {
+          `SELECT * FROM Medic WHERE id = ?`,
+          [user.id],
+          async (err: Error, rows: any[]) => {
+            if (err) {
+              console.error(err);
+              reject(500);
+            }
+
+            if (rows[0] === undefined) {
+              userType.isMedic = false;
+            } else {
+              userType.isMedic = true;
+              resolve({ ok: true, userType });
+            }
+
+            conn.query(
+              `SELECT id FROM Ingrijitor WHERE id = ?`,
+              [user.id],
+              async (err: Error, rows: any[]) => {
                 if (err) {
-                    console.error(err);
-                    reject(500);
+                  console.error(err);
+                  reject(500);
                 }
 
                 if (rows[0] === undefined) {
-                    userType.isAdmin = false;
+                  userType.isIngrijitor = false;
+                } else {
+                  userType.isIngrijitor = true;
+                  resolve({ ok: true, userType });
                 }
 
-
                 conn.query(
-                    `SELECT id FROM Medic WHERE id = ?`,
-                    [user.id],
-                    async (err: Error, rows: any[]) => {
-                        if (err) {
-                            console.error(err);
-                            reject(500);
-                        }
-
-                        if (rows[0] === undefined) {
-                            userType.isMedic = false;
-                        }
-
-                        conn.query(
-                            `SELECT id FROM Ingrijitor WHERE id = ?`,
-                            [user.id],
-                            async (err: Error, rows: any[]) => {
-                                if (err) {
-                                    console.error(err);
-                                    reject(500);
-                                }
-
-                                if (rows[0] === undefined) {
-                                    userType.isIngrijitor = false;
-                                }
-
-                                conn.query(
-                                    `SELECT id FROM Pacient WHERE id = ?`,
-                                    [user.id],
-                                    async (err: Error, rows: any[]) => {
-                                        if (err) {
-                                            console.error(err);
-                                            reject(500);
-                                        }
-
-                                        if (rows[0] === undefined) {
-                                            userType.isPacient = false;
-                                        }
-
-                                        resolve({ ok: true, userType });
-                                    }
-                                );
-
-                            }
-                        );
-
+                  `SELECT id FROM Pacient WHERE id = ?`,
+                  [user.id],
+                  async (err: Error, rows: any[]) => {
+                    if (err) {
+                      console.error(err);
+                      reject(500);
                     }
-                );
-            });
-    });
-}
 
-export {
-    isMedic,
-    isAdmin,
-    getUserType
-}
+                    if (rows[0] === undefined) {
+                      userType.isPacient = false;
+                    } else {
+                      userType.isPacient = true;
+                    }
+
+                    resolve({ ok: true, userType });
+                  }
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+};
+
+export { isMedic, isAdmin, getUserType };
