@@ -1,3 +1,11 @@
+CREATE TABLE `Users` (
+  `id` integer PRIMARY KEY AUTO_INCREMENT,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `email` varchar(100) UNIQUE,
+  `password_hash` varchar(100) NOT NULL
+);
+
 CREATE TABLE `Admin` (
   `id` integer PRIMARY KEY
 );
@@ -108,40 +116,23 @@ CREATE TABLE `Alerta_Supraveghetor` (
   `data_si_ora_bifata` datetime
 );
 
-CREATE TABLE `Senzor_ecg` (
-  `ID_ecg` integer PRIMARY KEY,
-  `CNP_pacient` varchar(13),
-  `valoare_ecg` float,
-  `validitate_ecg` integer,
-  `timestamp` date,
-  `CUI` varchar(10)
-);
 
-CREATE TABLE `Senzor_temperatura` (
-  `ID_temp` integer PRIMARY KEY,
-  `CNP_pacient` varchar(13) NOT NULL,
-  `valoare_temp` float,
-  `validitate_temp` integer,
-  `timestamp` date,
-  `CUI` varchar(10)
-);
-
-CREATE TABLE `Senzor_puls` (
-  `ID_puls` integer PRIMARY KEY,
+CREATE TABLE `Senzor_data` (
+  `ID_senzor` integer PRIMARY KEY,
   `CNP_pacient` varchar(13) NOT NULL,
   `valoare_puls` float,
   `validitate_puls` integer,
-  `timestamp` date,
-  `CUI` varchar(10)
+  `valoare_temp` float,
+  `validitate_temp` integer,
+  `valoare_umiditate` float,
+  `validitate_umiditate` integer,
+  `valoare_lumina` float,
+  `validitate_lumina` integer,
+  `timestamp` date
 );
 
-CREATE TABLE `Users` (
-  `id` integer PRIMARY KEY AUTO_INCREMENT,
-  `first_name` varchar(50) NOT NULL,
-  `last_name` varchar(50) NOT NULL,
-  `email` varchar(100) UNIQUE,
-  `password_hash` varchar(100) NOT NULL
-);
+  
+
 
 ALTER TABLE `Admin` ADD FOREIGN KEY (`id`) REFERENCES `Users` (`id`);
 
@@ -171,13 +162,7 @@ ALTER TABLE `Consult` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP
 
 ALTER TABLE `Alerta_automata` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
-ALTER TABLE `Senzor_ecg` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
-
-ALTER TABLE `Senzor_temperatura` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
-
-ALTER TABLE `Senzor_puls` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
-
-
+ALTER TABLE `Senzor_data` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
 INSERT INTO `Users` (`id`, `first_name`, `last_name`, `email`, `password_hash`) VALUES
 (2, 'test', 'test', 'test@test.com', '$2b$10$dfDF6kGjZpMf.Yqt43xE.emJobspEO3DO.4Py.WzVi403.I49jRy6'),

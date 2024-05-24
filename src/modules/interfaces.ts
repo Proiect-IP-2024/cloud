@@ -38,5 +38,65 @@ export interface Recomandare
   alte_indicatii?: string;
   tratamente?: string;
 }
+export interface Medicamentatie
+{
+  id_medicamentatie: number;
+  CNP_pacient: string;
+  medicament: string;
+  frecventa: string;
+}
 
+
+export interface Tratamente {
+
+  id_tratament: number;
+  CNP_pacient: string;
+  tratament: string;
+  data_emitere?: Date;
+  alte_detalii?: string;
+  bifat_supraveghetor?: boolean;
+  data_ora_bifare?: Date;
+  observatii_ingrijitor?: string;
+}
+
+export interface Diagnostic {
+
+  id_diagnostic: number;
+  CNP_pacient: string;
+  diagnostic: string;
+  data_emitere?: Date;
+  alte_detalii?: string;
+}
+export interface Consult {
+  id_consult: number;
+  CNP_pacient: string;
+  data_consult: Date;
+  tensiune: number;
+  glicemie: number;
+  greutate: number;
+}
+
+
+
+export interface Date_medicale {
+    
+    ID_date_medicale: number;
+    CNP_pacient: string;
+    alergii: string;
+    consultatii_cardiologice: string;
+
+}
+  
+export interface Senzor_data {
+    ID_senzor: number;
+    CNP_pacient: string;
+    valoare_puls?: number;
+    validitate_puls?: number;
+    valoare_temp?: number;
+    validitate_temp?: number;
+    valoare_ecg?: number;
+    validitate_ecg?: number;
+    timestamp?: Date;
+    CUI?: string;
+}
 
