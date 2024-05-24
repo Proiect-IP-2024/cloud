@@ -13,7 +13,7 @@ import {
   User,
   UserToken,
 } from "./modules/interfaces";
-import { getUserType, isMedic } from "./utils/utils";
+import { getUserType, isMedic, getPacientData } from "./utils/utils";
 
 const app = express();
 
@@ -2110,6 +2110,51 @@ app.get(
   }
 );
 
+app.get("/user/getPacientProfile", async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const pacientID: string | null = req.body?.pacientID;
+
+
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    if (!(pacientID)) {
+      return res.status(400).send("Invalid data!");
+    }
+
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
+        }
+
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
+          }
+
+          const getPacientDataResponse = await getPacientData(pacientID, conn);
+
+          if (!getPacientDataResponse.ok) {
+            res.status(500).send();
+          }
+
+          console.log(getPacientDataResponse);
+
+          res.status(200).send({ pacinet: getPacientDataResponse.message })
+
+        });
+      }
+    );
+  } catch (e) {
+    console.error(e);
+    return res.sendStatus(500);
+  }
+});
 app.listen(PORT, () => {
   return console.log(`\nAUTH server is listening at PORT: ${PORT}`);
 });
