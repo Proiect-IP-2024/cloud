@@ -10,7 +10,7 @@ const app = express();
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, PUT");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "*");
   next();
 });
 
@@ -156,10 +156,23 @@ app.get("/user/refreshToken", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        if (err.name !== "TokenExpiredError") {
-          return res.status(403).send("Invalid token");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          if (err.name !== "TokenExpiredError") {
+            return res.status(403).send("Invalid token");
+          }
+
+          const newToken = jwt.sign(
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET || "secret",
+            {
+              expiresIn: "1h",
+            }
+          );
+          return res.status(200).send({ token: newToken });
         }
 
         const newToken = jwt.sign(
@@ -169,19 +182,10 @@ app.get("/user/refreshToken", async (req: Request, res: Response) => {
             expiresIn: "1h",
           }
         );
+
         return res.status(200).send({ token: newToken });
       }
-
-      const newToken = jwt.sign(
-        { id: user.id, email: user.email },
-        process.env.JWT_SECRET || "secret",
-        {
-          expiresIn: "1h",
-        }
-      );
-
-      return res.status(200).send({ token: newToken });
-    });
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -196,39 +200,43 @@ app.get("/user/getUserData", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `SELECT first_name, last_name, email FROM Users WHERE email = ? `,
-          [user.email],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(500).send("User not found");
-            }
-
-            const user = rows[0];
-
-            conn.release();
-            return res.status(200).send({ user });
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `SELECT first_name, last_name, email FROM Users WHERE email = ? `,
+            [user.email],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(500).send("User not found");
+              }
+
+              const user = rows[0];
+
+              conn.release();
+              return res.status(200).send({ user });
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -243,32 +251,36 @@ app.delete("/user/deleteUser", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `DELETE FROM Users WHERE email = ? `,
-          [user.email],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("User deleted");
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `DELETE FROM Users WHERE email = ? `,
+            [user.email],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("User deleted");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -283,34 +295,38 @@ app.post("/user/setAdmin", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `INSERT INTO Admin SET ?`,
-          {
-            id: user.id,
-          },
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("User is now admin");
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `INSERT INTO Admin SET ?`,
+            {
+              id: user.id,
+            },
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("User is now admin");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -325,32 +341,36 @@ app.delete("/user/removeAdmin", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `DELETE FROM ADMIN WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("User is no longer admin");
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `DELETE FROM ADMIN WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("User is no longer admin");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -365,32 +385,42 @@ app.get("/user/getUserType", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        const userTypeResp = await getUserType(user, conn);
-
-        if (userTypeResp.ok) {
-          conn.release();
-          return res.status(200).send(userTypeResp.userType);
-        } else {
-          conn.release();
-          if (userTypeResp.status && userTypeResp.userType && userTypeResp.message) {
-            return res.status(userTypeResp.status).send({ userType: userTypeResp.userType, message: userTypeResp.message });
-          } else {
-            return res.status(403).send('Forbidden');
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        }
 
-      });
-    });
+          const userTypeResp = await getUserType(user, conn);
+
+          if (userTypeResp.ok) {
+            conn.release();
+            return res.status(200).send(userTypeResp.userType);
+          } else {
+            conn.release();
+            if (
+              userTypeResp.status &&
+              userTypeResp.userType &&
+              userTypeResp.message
+            ) {
+              return res.status(userTypeResp.status).send({
+                userType: userTypeResp.userType,
+                message: userTypeResp.message,
+              });
+            } else {
+              return res.status(403).send("Forbidden");
+            }
+          }
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -410,58 +440,68 @@ app.post("/user/changePassword", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid data!");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `SELECT password_hash FROM Users WHERE email = ?`,
-          [user.email],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(500).send("User not found");
-            }
-
-            if (
-              !(await bcrypt.compare(userData.password, rows[0].password_hash))
-            ) {
-              conn.release();
-              return res.status(500).send("Invalid password");
-            }
-
-            const hashedPassword = await bcrypt.hash(userData.newPassword, 10);
-
-            conn.query(
-              `UPDATE Users SET password_hash = ? WHERE email = ?`,
-              [hashedPassword, user.email],
-              async (err, rows) => {
-                if (err) {
-                  conn.release();
-                  console.error(err);
-                  return res.sendStatus(500);
-                }
-
-                conn.release();
-                return res.status(200).send("Password changed");
-              }
-            );
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `SELECT password_hash FROM Users WHERE email = ?`,
+            [user.email],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(500).send("User not found");
+              }
+
+              if (
+                !(await bcrypt.compare(
+                  userData.password,
+                  rows[0].password_hash
+                ))
+              ) {
+                conn.release();
+                return res.status(500).send("Invalid password");
+              }
+
+              const hashedPassword = await bcrypt.hash(
+                userData.newPassword,
+                10
+              );
+
+              conn.query(
+                `UPDATE Users SET password_hash = ? WHERE email = ?`,
+                [hashedPassword, user.email],
+                async (err, rows) => {
+                  if (err) {
+                    conn.release();
+                    console.error(err);
+                    return res.sendStatus(500);
+                  }
+
+                  conn.release();
+                  return res.status(200).send("Password changed");
+                }
+              );
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -483,88 +523,95 @@ app.post("/user/updateUserData", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid data!");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
+        }
+
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
+          }
+
+          if (userData?.newPassword) {
+            // vrerify if the old password is correct if user want to change password
+            conn.query(
+              `SELECT password_hash FROM Users WHERE id = ?`,
+              [user.id],
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+
+                if (rows[0] === undefined) {
+                  conn.release();
+                  return res.status(500).send("User not found");
+                }
+
+                if (
+                  !(await bcrypt.compare(
+                    userData.password,
+                    rows[0].password_hash
+                  ))
+                ) {
+                  conn.release();
+                  return res.status(500).send("Invalid password");
+                }
+                conn.release();
+              }
+            );
+
+            hashedPassword = await bcrypt.hash(userData.newPassword, 10);
+          }
+
+          //verify if user want to change password
+          if (!hashedPassword) {
+            // update user data without password
+            conn.query(
+              `UPDATE Users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
+              [userData.firstName, userData.lastName, userData.email, user.id],
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+
+                conn.release();
+                return res.status(200).send("User data updated");
+              }
+            );
+          } else {
+            // update user data with password
+            conn.query(
+              `UPDATE Users SET first_name = ?, last_name = ?, email = ?, password_hash = ? WHERE id = ?`,
+              [
+                userData.firstName,
+                userData.lastName,
+                userData.email,
+                hashedPassword,
+                user.id,
+              ],
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+
+                conn.release();
+                return res.status(200).send("User data updated");
+              }
+            );
+          }
+        });
       }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
-        }
-
-        if (userData?.newPassword) {
-          // vrerify if the old password is correct if user want to change password
-          conn.query(
-            `SELECT password_hash FROM Users WHERE id = ?`,
-            [user.id],
-            async (err, rows) => {
-              if (err) {
-                conn.release();
-                console.error(err);
-                return res.sendStatus(500);
-              }
-
-              if (rows[0] === undefined) {
-                conn.release();
-                return res.status(500).send("User not found");
-              }
-
-              if (
-                !(await bcrypt.compare(userData.password, rows[0].password_hash))
-              ) {
-                conn.release();
-                return res.status(500).send("Invalid password");
-              }
-              conn.release();
-            }
-          );
-
-          hashedPassword = await bcrypt.hash(userData.newPassword, 10);
-        }
-
-        //verify if user want to change password
-        if (!hashedPassword) {
-          // update user data without password
-          conn.query(
-            `UPDATE Users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
-            [userData.firstName, userData.lastName, userData.email, user.id],
-            async (err, rows) => {
-              if (err) {
-                conn.release();
-                console.error(err);
-                return res.sendStatus(500);
-              }
-
-              conn.release();
-              return res.status(200).send("User data updated");
-            }
-          );
-        } else {
-          // update user data with password
-          conn.query(
-            `UPDATE Users SET first_name = ?, last_name = ?, email = ?, password_hash = ? WHERE id = ?`,
-            [
-              userData.firstName,
-              userData.lastName,
-              userData.email,
-              hashedPassword,
-              user.id,
-            ],
-            async (err, rows) => {
-              if (err) {
-                conn.release();
-                console.error(err);
-                return res.sendStatus(500);
-              }
-
-              conn.release();
-              return res.status(200).send("User data updated");
-            }
-          );
-        }
-      });
-    });
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -584,35 +631,39 @@ app.post("/user/addMedic", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid data!");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `INSERT INTO Medic SET ?`,
-          {
-            id: user.id,
-            telefon: userData.telefon,
-          },
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Medic added");
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `INSERT INTO Medic SET ?`,
+            {
+              id: user.id,
+              telefon: userData.telefon,
+            },
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Medic added");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -627,39 +678,43 @@ app.get("/user/getMedicData", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `SELECT telefon FROM Medic WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(500).send("Medic not found");
-            }
-
-            const medic = rows[0];
-
-            conn.release();
-            return res.status(200).send({ medic });
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `SELECT telefon FROM Medic WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(500).send("Medic not found");
+              }
+
+              const medic = rows[0];
+
+              conn.release();
+              return res.status(200).send({ medic });
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -674,32 +729,36 @@ app.delete("/user/deleteMedic", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `DELETE FROM Medic WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Medic deleted");
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `DELETE FROM Medic WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Medic deleted");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -709,8 +768,7 @@ app.delete("/user/deleteMedic", async (req: Request, res: Response) => {
 app.post("/user/addPacient", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const userData: Pacient | null =
-      req.body?.userData;
+    const userData: Pacient | null = req.body?.userData;
 
     if (!token) {
       return res.status(400).send("Invalid token");
@@ -731,40 +789,44 @@ app.post("/user/addPacient", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid data!");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `INSERT INTO Pacient SET ?`,
-          {
-            id: user.id,
-            CNP_pacient: userData.CNP_pacient,
-            varsta_pacient: userData.varsta_pacient,
-            adresa_pacient: userData.adresa_pacient,
-            telefon_pacient: userData.telefon_pacient,
-            profesie_pacient: userData.profesie_pacient,
-            loc_munca_pacient: userData.loc_munca_pacient,
-          },
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Pacient added");
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `INSERT INTO Pacient SET ?`,
+            {
+              id: user.id,
+              CNP_pacient: userData.CNP_pacient,
+              varsta_pacient: userData.varsta_pacient,
+              adresa_pacient: userData.adresa_pacient,
+              telefon_pacient: userData.telefon_pacient,
+              profesie_pacient: userData.profesie_pacient,
+              loc_munca_pacient: userData.loc_munca_pacient,
+            },
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Pacient added");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -779,44 +841,49 @@ app.get("/user/getPacientData", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `SELECT CNP_pacient, id_medic,varsta_pacient,adresa_pacient,	telefon_pacient,	profesie_pacient,	loc_munca_pacient FROM Pacient WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(500).send("Pacient not found");
-            }
-
-            const pacient = rows[0];
-
-            conn.release();
-            return res.status(200).send({ pacient });
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `SELECT CNP_pacient, id_medic,varsta_pacient,adresa_pacient,	telefon_pacient,	profesie_pacient,	loc_munca_pacient FROM Pacient WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(500).send("Pacient not found");
+              }
+
+              const pacient = rows[0];
+
+              conn.release();
+              return res.status(200).send({ pacient });
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
+
 app.delete("/user/deletePacient", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -825,37 +892,42 @@ app.delete("/user/deletePacient", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `DELETE FROM Pacient WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Pacient deleted");
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `DELETE FROM Pacient WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Pacient deleted");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
+
 app.post("/user/addIngrijitor", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -864,41 +936,44 @@ app.post("/user/addIngrijitor", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `INSERT INTO Ingrijitor SET ?`,
-          {
-            id: user.id,
-
-          },
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Ingrijitor added");
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `INSERT INTO Ingrijitor SET ?`,
+            {
+              id: user.id,
+            },
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Ingrijitor added");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
+
 app.get("/user/getIngrijitorData", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -907,44 +982,49 @@ app.get("/user/getIngrijitorData", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `SELECT * FROM Ingrijitor WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(500).send("Ingrijitor not found");
-            }
-
-            const ingrijitor = rows[0];
-
-            conn.release();
-            return res.status(200).send({ ingrijitor });
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `SELECT * FROM Ingrijitor WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(500).send("Ingrijitor not found");
+              }
+
+              const ingrijitor = rows[0];
+
+              conn.release();
+              return res.status(200).send({ ingrijitor });
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
+
 app.delete("/user/deleteIngrijitor", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -953,32 +1033,36 @@ app.delete("/user/deleteIngrijitor", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `DELETE FROM Ingrijitor WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Ingrijitor deleted");
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `DELETE FROM Ingrijitor WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Ingrijitor deleted");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -998,37 +1082,42 @@ app.post("/user/addMedicToPacient", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid data!");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `UPDATE Pacient SET id_medic = ? WHERE id = ? `,
-          [user.id, userData.id_pacient],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Medic added to pacient");
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `UPDATE Pacient SET id_medic = ? WHERE id = ? `,
+            [user.id, userData.id_pacient],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Medic added to pacient");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
+
 app.get("/user/isTokenValid", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -1037,18 +1126,23 @@ app.get("/user/isTokenValid", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
+        }
 
-      return res.status(200).send("Token is valid");
-    });
+        return res.status(200).send("Token is valid");
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
+
 app.post("/user/setRecomandareMedic", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -1058,52 +1152,65 @@ app.post("/user/setRecomandareMedic", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    if (!(userData && userData?.id_recomandare && userData?.CNP_pacient && userData?.tip_recomandare && userData?.durata_zilnica && userData?.alte_indicatii && userData?.tratamente)) {
+    if (
+      !(
+        userData &&
+        userData?.id_recomandare &&
+        userData?.CNP_pacient &&
+        userData?.tip_recomandare &&
+        userData?.durata_zilnica &&
+        userData?.alte_indicatii &&
+        userData?.tratamente
+      )
+    ) {
       return res.status(400).send("Invalid data!");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", async (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection(async (error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        const isMedicResp = await isMedic(user, conn);
-
-        if (!isMedicResp) {
-          conn.release();
-          return res.status(403).send("User is not medic");
-        }
-
-        conn.query(
-          `Insert INTO Recomadare_medic SET ? `,
-          {
-            id_recomandare: userData.id_recomandare,
-            CNP_pacient: userData.CNP_pacient,
-            tip_recomandare: userData.tip_recomandare,
-            durata_zilnica: userData.durata_zilnica,
-            alte_indicatii: userData.alte_indicatii,
-            tratamente: userData.tratamente,
-
-          },
-          //[user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            conn.release();
-            return res.status(200).send("Recomandare added");
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          const isMedicResp = await isMedic(user, conn);
+
+          if (!isMedicResp) {
+            conn.release();
+            return res.status(403).send("User is not medic");
+          }
+
+          conn.query(
+            `Insert INTO Recomadare_medic SET ? `,
+            {
+              id_recomandare: userData.id_recomandare,
+              CNP_pacient: userData.CNP_pacient,
+              tip_recomandare: userData.tip_recomandare,
+              durata_zilnica: userData.durata_zilnica,
+              alte_indicatii: userData.alte_indicatii,
+              tratamente: userData.tratamente,
+            },
+            //[user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send("Recomandare added");
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
@@ -1118,45 +1225,162 @@ app.get("/user/getRecomandareMedic", async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token");
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: UserToken) => {
-      if (err) {
-        return res.status(403).send("Invalid token");
-      }
-
-      pool.getConnection((error: any, conn) => {
-        if (error) {
-          return res.status(500).send("Connection error");
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
         }
 
-        conn.query(
-          `SELECT recomandare FROM Pacient WHERE id = ?`,
-          [user.id],
-          async (err, rows) => {
-            if (err) {
-              conn.release();
-              console.error(err);
-              return res.sendStatus(500);
-            }
-
-            if (rows[0] === undefined) {
-              conn.release();
-              return res.status(500).send("Pacient not found");
-            }
-
-            const recomandare = rows[0];
-
-            conn.release();
-            return res.status(200).send({ recomandare });
+        pool.getConnection((error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
           }
-        );
-      });
-    });
+
+          conn.query(
+            `SELECT recomandare FROM Pacient WHERE id = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(500).send("Pacient not found");
+              }
+
+              const recomandare = rows[0];
+
+              conn.release();
+              return res.status(200).send({ recomandare });
+            }
+          );
+        });
+      }
+    );
   } catch (e) {
     console.error(e);
     return res.sendStatus(500);
   }
 });
 
+app.get("/user/getAssignedPacientList", async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    console.log(token);
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
+        }
+
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
+          }
+
+          const isMedicResp = await isMedic(user, conn);
+
+          if (!isMedicResp) {
+            conn.release();
+            return res.status(403).send("User is not medic");
+          }
+
+          conn.query(
+            `SELECT Pacient.*, Users.first_name, Users.last_name, Users.email 
+             FROM Users
+             JOIN Pacient ON Users.id = Pacient.id
+             WHERE Pacient.id_medic = ?`,
+            [user.id],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              conn.release();
+              return res.status(200).send({ pacientList: rows });
+            }
+          );
+        });
+      }
+    );
+  } catch (e) {
+    console.error(e);
+    return res.sendStatus(500);
+  }
+});
+
+app.get(
+  "/user/getUnassignedPacientList",
+  async (req: Request, res: Response) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+
+      console.log(token);
+      if (!token) {
+        return res.status(400).send("Invalid token");
+      }
+
+      jwt.verify(
+        token,
+        process.env.JWT_SECRET || "secret",
+        async (err, user: UserToken) => {
+          if (err) {
+            return res.status(403).send("Invalid token");
+          }
+
+          pool.getConnection(async (error: any, conn) => {
+            if (error) {
+              return res.status(500).send("Connection error");
+            }
+
+            const isMedicResp = await isMedic(user, conn);
+
+            console.log(isMedicResp);
+
+            if (!isMedicResp.ok) {
+              conn.release();
+              return res.status(403).send("User is not medic");
+            }
+
+            conn.query(
+              `SELECT Pacient.*, Users.first_name, Users.last_name, Users.email 
+             FROM Pacient
+             JOIN Users ON Pacient.id = Users.id
+             WHERE Pacient.id_medic IS NULL`,
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+
+                conn.release();
+                return res.status(200).send({ pacientList: rows });
+              }
+            );
+          });
+        }
+      );
+    } catch (e) {
+      console.error(e);
+      return res.sendStatus(500);
+    }
+  }
+);
 
 app.listen(PORT, () => {
   return console.log(`\nAUTH server is listening at PORT: ${PORT}`);
