@@ -201,3 +201,22 @@ INSERT INTO `Admin` (`id`) VALUES
 
 INSERT INTO `Ingrijitor` (`id`) VALUES
 (6);
+INSERT INTO `Alerta_automata` (`id_alerta_automata`, `CNP_pacient`, `tip_senzor`, `mesaj_automat`, `data_alerta_automata`) VALUES
+(2, '1234567890123', 'ultrasonic', '.i.', '2024-05-16');
+INSERT INTO `Alerta_Supraveghetor` (`id_alerta_upraveghetor`, `CNP_pacient`, `data_si_ora_alertei`, `bifat`, `data_si_ora_bifata`) VALUES
+(1, '1234567890123', '2024-05-31 01:47:35', NULL, NULL);
+INSERT INTO `Consult` (`id_consult`, `CNP_pacient`, `data_consult`, `tensiune`, `glicemie`, `greutate`) VALUES
+(1, '1234567890123', '2024-05-16', 5, 23, 65);
+INSERT INTO `Date_medicale` (`ID_date_medicale`, `CNP_pacient`, `alergii`, `consultatii_cardiologice`) VALUES
+(1, '1234567890123', 'asdfg', 'sdaf');
+INSERT INTO `Diagnostic` (`id_diagnostic`, `CNP_pacient`, `diagnostic`, `data_emitere`, `alte_detalii`) VALUES
+(1, '1234567890123', 'ingineria programarii', '2024-05-16', 'tuie mivadar');
+INSERT INTO `Recomadare_medic` (`id_recomandare`, `CNP_pacient`, `tip_recomandare`, `durata_zilnica`, `alte_indicatii`, `tratamente`) VALUES
+(1, '1234567890123', 'top', 2, 'sex', 'nu');
+INSERT INTO `Schema_medicamentatie` (`id_medicament`, `CNP_pacient`, `nume_medicament`, `frecventa`) VALUES
+(1, '1234567890123', 'xanax', '3');
+INSERT INTO `Senzor_data` (`ID_senzor`, `CNP_pacient`, `valoare_puls`, `validitate_puls`, `valoare_temp`, `validitate_temp`, `valoare_umiditate`, `validitate_umiditate`, `valoare_lumina`, `validitate_lumina`, `timestamp`) VALUES
+(1, '1234567890123', 123, 1, 23, 1, 13, 1, 0.2, 1, '2024-05-24');
+INSERT INTO `Tratamente` (`id_tratament`, `CNP_pacient`, `tratament`, `data_emitere`, `alte_detalii`, `bifat_supraveghetor`, `data_ora_bifare`, `observatii_ingrijitor`) VALUES
+(1, '1234567890123', '2', '2024-05-23', 'sadfg', 1, '2024-05-22 01:38:59', 'sdafgh');
+
