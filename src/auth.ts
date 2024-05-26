@@ -2000,7 +2000,6 @@ app.get("/user/getAssignedPacientList", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
 
-    console.log(token);
     if (!token) {
       return res.status(400).send("Invalid token");
     }
@@ -2056,8 +2055,7 @@ app.get(
   async (req: Request, res: Response) => {
     try {
       const token = req.headers.authorization?.split(" ")[1];
-
-      console.log(token);
+      
       if (!token) {
         return res.status(400).send("Invalid token");
       }
@@ -2076,8 +2074,6 @@ app.get(
             }
 
             const isMedicResp = await isMedic(user, conn);
-
-            console.log(isMedicResp);
 
             if (!isMedicResp.ok) {
               conn.release();

@@ -1,4 +1,7 @@
 import { UserToken } from "../modules/interfaces";
+import { Connection } from "mysql";
+import { BroadcastOperator, Socket } from "socket.io";
+import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
 interface Response {
   ok: boolean;
@@ -389,4 +392,26 @@ const getPacientData = async (pacientID: string, conn: any) => {
   });
 };
 
-export { isMedic, isAdmin, getUserType, getPacientData };
+const getPatientPulse = (
+  CNP_pacient: number,
+  conn: Connection,
+  socket: BroadcastOperator<DefaultEventsMap, any>
+) => {
+  conn.query(
+    "SELECT valoare_puls, valoare_temp, valoare_umiditate, valoare_lumina FROM Senzor_data WHERE CNP_pacient = ? ORDER BY timestamp DESC LIMIT 1",
+    [CNP_pacient],
+    (err, results) => {
+      if (err) {
+        console.error("Error querying the database:", err);
+        return;
+      }
+      if (results.length > 0) {
+        socket.emit("pulseUpdate", {
+          CNP_pacient,
+          sensor_data: results[0],
+        });
+      }
+    }
+  );
+};
+export { isMedic, isAdmin, getUserType, getPacientData, getPatientPulse };
