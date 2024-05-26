@@ -2110,17 +2110,16 @@ app.get(
   }
 );
 
-app.get("/user/getPacientProfile", async (req: Request, res: Response) => {
+app.post("/user/getPacientProfile", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     const pacientID: string | null = req.body?.pacientID;
-
 
     if (!token) {
       return res.status(400).send("Invalid token");
     }
 
-    if (!(pacientID)) {
+    if (!pacientID) {
       return res.status(400).send("Invalid data!");
     }
 
@@ -2143,10 +2142,7 @@ app.get("/user/getPacientProfile", async (req: Request, res: Response) => {
             res.status(500).send();
           }
 
-          console.log(getPacientDataResponse);
-
-          res.status(200).send({ pacinet: getPacientDataResponse.message })
-
+          res.status(200).send({ pacient: getPacientDataResponse.message });
         });
       }
     );
@@ -2155,6 +2151,7 @@ app.get("/user/getPacientProfile", async (req: Request, res: Response) => {
     return res.sendStatus(500);
   }
 });
+
 app.listen(PORT, () => {
   return console.log(`\nAUTH server is listening at PORT: ${PORT}`);
 });

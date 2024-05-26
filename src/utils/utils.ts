@@ -1,153 +1,152 @@
 import { UserToken } from "../modules/interfaces";
 
 interface Response {
-    ok: boolean;
-    status?: number;
-    message?: any;
+  ok: boolean;
+  status?: number;
+  message?: any;
 }
 
 interface ResponseUserType extends Response {
-    userType: {
-        isMedic: boolean;
-        isAdmin: boolean;
-        isIngrijitor: boolean;
-        isPacient: boolean;
-    };
+  userType: {
+    isMedic: boolean;
+    isAdmin: boolean;
+    isIngrijitor: boolean;
+    isPacient: boolean;
+  };
 }
 
 const isAdmin = (user: UserToken, conn: any) => {
-    return new Promise<Response>((resolve, reject) => {
-        conn.query(
-            `SELECT * FROM ADMIN WHERE id = ?`,
-            [user.id],
-            async (err, rows) => {
-                if (err) {
-                    console.error(err);
-                    reject(500);
-                }
+  return new Promise<Response>((resolve, reject) => {
+    conn.query(
+      `SELECT * FROM ADMIN WHERE id = ?`,
+      [user.id],
+      async (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(500);
+        }
 
-                if (rows[0] === undefined) {
-                    resolve({ ok: false, status: 403, message: "Forbidden" });
-                }
+        if (rows[0] === undefined) {
+          resolve({ ok: false, status: 403, message: "Forbidden" });
+        }
 
-                resolve({ ok: true });
-            }
-        );
-    });
+        resolve({ ok: true });
+      }
+    );
+  });
 };
 
 const isMedic = (user: UserToken, conn: any) => {
-    return new Promise<Response>((resolve, reject) => {
-        conn.query(
-            `SELECT id FROM Medic WHERE id = ?`,
-            [user.id],
-            async (err: Error, rows: any[]) => {
-                if (err) {
-                    console.error(err);
-                    reject(500);
-                }
+  return new Promise<Response>((resolve, reject) => {
+    conn.query(
+      `SELECT id FROM Medic WHERE id = ?`,
+      [user.id],
+      async (err: Error, rows: any[]) => {
+        if (err) {
+          console.error(err);
+          reject(500);
+        }
 
-                if (rows[0] === undefined) {
-                    resolve({ ok: false, status: 403, message: "Forbidden" });
-                }
+        if (rows[0] === undefined) {
+          resolve({ ok: false, status: 403, message: "Forbidden" });
+        }
 
-                resolve({ ok: true });
-            }
-        );
-    });
+        resolve({ ok: true });
+      }
+    );
+  });
 };
 
 const getUserType = (user: UserToken, conn: any) => {
-    var userType = {
-        isAdmin: false,
-        isMedic: false,
-        isIngrijitor: false,
-        isPacient: false,
-    };
+  var userType = {
+    isAdmin: false,
+    isMedic: false,
+    isIngrijitor: false,
+    isPacient: false,
+  };
 
-    return new Promise<ResponseUserType>((resolve, reject) => {
+  return new Promise<ResponseUserType>((resolve, reject) => {
+    conn.query(
+      `SELECT * FROM Admin WHERE id = ?`,
+      [user.id],
+      async (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(500);
+        }
+
+        if (rows[0] === undefined) {
+          userType.isAdmin = false;
+        } else {
+          userType.isAdmin = true;
+          resolve({ ok: true, userType });
+        }
+
         conn.query(
-            `SELECT * FROM Admin WHERE id = ?`,
-            [user.id],
-            async (err, rows) => {
+          `SELECT * FROM Medic WHERE id = ?`,
+          [user.id],
+          async (err: Error, rows: any[]) => {
+            if (err) {
+              console.error(err);
+              reject(500);
+            }
+
+            if (rows[0] === undefined) {
+              userType.isMedic = false;
+            } else {
+              userType.isMedic = true;
+              resolve({ ok: true, userType });
+            }
+
+            conn.query(
+              `SELECT id FROM Ingrijitor WHERE id = ?`,
+              [user.id],
+              async (err: Error, rows: any[]) => {
                 if (err) {
-                    console.error(err);
-                    reject(500);
+                  console.error(err);
+                  reject(500);
                 }
 
                 if (rows[0] === undefined) {
-                    userType.isAdmin = false;
+                  userType.isIngrijitor = false;
                 } else {
-                    userType.isAdmin = true;
-                    resolve({ ok: true, userType });
+                  userType.isIngrijitor = true;
+                  resolve({ ok: true, userType });
                 }
 
                 conn.query(
-                    `SELECT * FROM Medic WHERE id = ?`,
-                    [user.id],
-                    async (err: Error, rows: any[]) => {
-                        if (err) {
-                            console.error(err);
-                            reject(500);
-                        }
-
-                        if (rows[0] === undefined) {
-                            userType.isMedic = false;
-                        } else {
-                            userType.isMedic = true;
-                            resolve({ ok: true, userType });
-                        }
-
-                        conn.query(
-                            `SELECT id FROM Ingrijitor WHERE id = ?`,
-                            [user.id],
-                            async (err: Error, rows: any[]) => {
-                                if (err) {
-                                    console.error(err);
-                                    reject(500);
-                                }
-
-                                if (rows[0] === undefined) {
-                                    userType.isIngrijitor = false;
-                                } else {
-                                    userType.isIngrijitor = true;
-                                    resolve({ ok: true, userType });
-                                }
-
-                                conn.query(
-                                    `SELECT id FROM Pacient WHERE id = ?`,
-                                    [user.id],
-                                    async (err: Error, rows: any[]) => {
-                                        if (err) {
-                                            console.error(err);
-                                            reject(500);
-                                        }
-
-                                        if (rows[0] === undefined) {
-                                            userType.isPacient = false;
-                                        } else {
-                                            userType.isPacient = true;
-                                        }
-
-                                        resolve({ ok: true, userType });
-                                    }
-                                );
-                            }
-                        );
+                  `SELECT id FROM Pacient WHERE id = ?`,
+                  [user.id],
+                  async (err: Error, rows: any[]) => {
+                    if (err) {
+                      console.error(err);
+                      reject(500);
                     }
+
+                    if (rows[0] === undefined) {
+                      userType.isPacient = false;
+                    } else {
+                      userType.isPacient = true;
+                    }
+
+                    resolve({ ok: true, userType });
+                  }
                 );
-            }
+              }
+            );
+          }
         );
-    });
+      }
+    );
+  });
 };
 
-
 const getPacientData = async (pacientID: string, conn: any) => {
-    var pacientData = null;
+  var pacientData = null;
 
-    return new Promise<Response>((resolve, reject) => {
-        conn.query(
-            `SELECT 
+  return new Promise<Response>((resolve, reject) => {
+    conn.query(
+      `SELECT 
         Pacient.*, 
         Users.first_name, 
         Users.last_name, 
@@ -155,212 +154,239 @@ const getPacientData = async (pacientID: string, conn: any) => {
         FROM Pacient 
         JOIN Users ON Pacient.id = Users.id
         WHERE Pacient.id = ?`,
-            [pacientID],
-            async (err, rows) => {
-                if (err) {
-                    conn.release();
-                    console.error(err);
-                    reject({ ok: false, status: 500 });
-                }
+      [pacientID],
+      async (err, rows) => {
+        if (err) {
+          conn.release();
+          console.error(err);
+          reject({ ok: false, status: 500 });
+        }
 
-                if (rows[0] === undefined) {
-                    conn.release();
-                    reject({ ok: false, status: 500, message: "User not found" });
-                }
+        if (rows[0] === undefined) {
+          conn.release();
+          reject({ ok: false, status: 500, message: "User not found" });
+        }
 
-                pacientData = rows[0];
+        pacientData = rows[0];
 
-                conn.query(
-                    `SELECT
+        conn.query(
+          `SELECT
             Pacient.CNP_pacient,
             Date_medicale.*
             FROM Pacient
             JOIN Date_medicale ON Pacient.CNP_pacient = Date_medicale.CNP_pacient
             WHERE Pacient.id = ?`,
-                    [pacientID],
-                    async (err, rows_date_medicale) => {
-                        if (err) {
-                            conn.release();
-                            console.error(err);
-                            reject({ ok: false, status: 500 })
-                        }
+          [pacientID],
+          async (err, rows_date_medicale) => {
+            if (err) {
+              conn.release();
+              console.error(err);
+              reject({ ok: false, status: 500 });
+            }
 
-                        const date_medicale = rows_date_medicale[0];
+            const date_medicale = rows_date_medicale[0];
 
-                        if (date_medicale) {
-                            pacientData = { ...pacientData, ...date_medicale }
-                        }
+            if (date_medicale) {
+              pacientData = { ...pacientData, ...date_medicale };
+            }
 
-
-                        conn.query(
-                            `SELECT
+            conn.query(
+              `SELECT
                 Pacient.CNP_pacient,
                 Consult.*
                 FROM Pacient
                 JOIN Consult ON Pacient.CNP_pacient = Consult.CNP_pacient
                 WHERE Pacient.id = ?
               `,
-                            [pacientID],
-                            async (err, rows_date_consult) => {
-                                if (err) {
-                                    conn.release();
-                                    console.error(err);
-                                    reject({ ok: false, status: 500 })
-                                }
+              [pacientID],
+              async (err, rows_date_consult) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  reject({ ok: false, status: 500 });
+                }
 
-                                const date_cosult = rows_date_consult[0];
+                const date_cosult = rows_date_consult[0];
 
-                                if (date_cosult) {
-                                    pacientData = { ...pacientData, ...date_cosult }
-                                }
+                if (date_cosult) {
+                  pacientData = { ...pacientData, consult: { ...date_cosult } };
+                }
 
-                                conn.query(
-                                    `SELECT
+                conn.query(
+                  `SELECT
                   Pacient.CNP_pacient,
                   Diagnostic.*
                   FROM Pacient
                   JOIN Diagnostic ON Pacient.CNP_pacient = Diagnostic.CNP_pacient
                   WHERE Pacient.id = ?
                   `,
-                                    [pacientID],
-                                    async (errr, rows_diagnostic) => {
-                                        if (err) {
-                                            conn.release();
-                                            console.error(err);
-                                            reject({ ok: false, status: 500 })
-                                        }
+                  [pacientID],
+                  async (errr, rows_diagnostic) => {
+                    if (err) {
+                      conn.release();
+                      console.error(err);
+                      reject({ ok: false, status: 500 });
+                    }
 
-                                        const date_diagnostic = rows_diagnostic[0];
+                    const date_diagnostic = rows_diagnostic[0];
 
-                                        if (date_diagnostic) {
-                                            pacientData = { ...pacientData, ...date_diagnostic }
-                                        }
+                    if (date_diagnostic) {
+                      pacientData = {
+                        ...pacientData,
+                        diagnostic: { ...date_diagnostic },
+                      };
+                    }
 
-
-
-                                        conn.query(
-                                            `SELECT
+                    conn.query(
+                      `SELECT
                     Pacient.CNP_pacient,
                     Tratamente.*
                     FROM Pacient
                     JOIN Tratamente ON Pacient.CNP_pacient = Tratamente.CNP_pacient
                     WHERE Pacient.id = ?
                     `,
-                                            [pacientID],
-                                            async (errr, rows_tratamente) => {
-                                                if (err) {
-                                                    conn.release();
-                                                    console.error(err);
-                                                    reject({ ok: false, status: 500 })
-                                                }
+                      [pacientID],
+                      async (errr, rows_tratamente) => {
+                        if (err) {
+                          conn.release();
+                          console.error(err);
+                          reject({ ok: false, status: 500 });
+                        }
 
-                                                const date_tratamente = rows_tratamente[0];
+                        const date_tratamente = rows_tratamente[0];
 
-                                                if (date_tratamente) {
-                                                    pacientData = { ...pacientData, ...date_tratamente }
-                                                }
+                        if (date_tratamente) {
+                          pacientData = {
+                            ...pacientData,
+                            tratament: { ...date_tratamente },
+                          };
+                        }
 
-                                                conn.query(
-                                                    `SELECT
+                        conn.query(
+                          `SELECT
                         Pacient.CNP_pacient,
                         Schema_medicamentatie.*
                         FROM Pacient
                         JOIN Schema_medicamentatie ON Pacient.CNP_pacient = Schema_medicamentatie.CNP_pacient
                         WHERE Pacient.id = ?
                         `,
-                                                    [pacientID],
-                                                    async (errr, rows_medicamentatie) => {
-                                                        if (err) {
-                                                            conn.release();
-                                                            console.error(err);
-                                                            reject({ ok: false, status: 500 })
-                                                        }
+                          [pacientID],
+                          async (errr, rows_medicamentatie) => {
+                            if (err) {
+                              conn.release();
+                              console.error(err);
+                              reject({ ok: false, status: 500 });
+                            }
 
-                                                        const date_medicamentatie = rows_medicamentatie[0];
+                            const date_medicamentatie = rows_medicamentatie[0];
 
-                                                        if (date_medicamentatie) {
-                                                            pacientData = { ...pacientData, ...date_medicamentatie }
-                                                        }
+                            if (date_medicamentatie) {
+                              pacientData = {
+                                ...pacientData,
+                                medicament: { ...date_medicamentatie },
+                              };
+                            }
 
-                                                        conn.query(
-                                                            `SELECT
+                            conn.query(
+                              `SELECT
                             Pacient.CNP_pacient,
                             Recomadare_medic.*
                             FROM Pacient
                             JOIN Recomadare_medic ON Pacient.CNP_pacient = Recomadare_medic.CNP_pacient
                             WHERE Pacient.id = ?
                             `,
-                                                            [pacientID],
-                                                            async (errr, rows_recomandare) => {
-                                                                if (err) {
-                                                                    conn.release();
-                                                                    console.error(err);
-                                                                    reject({ ok: false, status: 500 })
-                                                                }
+                              [pacientID],
+                              async (errr, rows_recomandare) => {
+                                if (err) {
+                                  conn.release();
+                                  console.error(err);
+                                  reject({ ok: false, status: 500 });
+                                }
 
-                                                                const date_recomandare = rows_recomandare[0];
+                                const date_recomandare = rows_recomandare[0];
 
-                                                                if (date_recomandare) {
-                                                                    pacientData = { ...pacientData, ...date_recomandare }
-                                                                }
+                                if (date_recomandare) {
+                                  pacientData = {
+                                    ...pacientData,
+                                    recomandare: { ...date_recomandare },
+                                  };
+                                }
 
-                                                                conn.query(
-                                                                    `SELECT
+                                conn.query(
+                                  `SELECT
                                   Pacient.CNP_pacient,
                                   Alerta_automata.*
                                   FROM Pacient
                                   JOIN Alerta_automata ON Pacient.CNP_pacient = Alerta_automata.CNP_pacient
                                   WHERE Pacient.id = ?
                                   `,
-                                                                    [pacientID],
-                                                                    async (errr, rows_alerta) => {
-                                                                        if (err) {
-                                                                            conn.release();
-                                                                            console.error(err);
-                                                                            reject({ ok: false, status: 500 })
-                                                                        }
+                                  [pacientID],
+                                  async (errr, rows_alerta) => {
+                                    if (err) {
+                                      conn.release();
+                                      console.error(err);
+                                      reject({ ok: false, status: 500 });
+                                    }
 
-                                                                        const date_alerta = rows_alerta[0];
+                                    const date_alerta = rows_alerta[0];
 
-                                                                        if (date_alerta) {
-                                                                            pacientData = { ...pacientData, ...date_alerta }
-                                                                        }
+                                    if (date_alerta) {
+                                      pacientData = {
+                                        ...pacientData,
+                                        alerta_automata: { ...date_alerta },
+                                      };
+                                    }
 
-                                                                        conn.query(
-                                                                            `SELECT 
-                                                                                Pacient.CNP_pacient,
-                                                                             Senzor_data.*
+                                    conn.query(
+                                      `SELECT 
+                                        Pacient.CNP_pacient,
+                                        Senzor_data.*
                                         FROM Pacient
                                         JOIN Senzor_data ON Pacient.CNP_pacient = Senzor_data.CNP_pacient
                                         WHERE Pacient.id = ?
                                         `,
-                                                                            [pacientID],
-                                                                            async (errr, rows_senzor) => {
-                                                                                if (err) {
-                                                                                    conn.release();
-                                                                                    console.error(err);
-                                                                                    reject({ ok: false, status: 500 })
-                                                                                }
+                                      [pacientID],
+                                      async (errr, rows_senzor) => {
+                                        if (err) {
+                                          conn.release();
+                                          console.error(err);
+                                          reject({ ok: false, status: 500 });
+                                        }
 
-                                                                                const date_senzor = rows_senzor[0];
+                                        const date_senzor = rows_senzor[0];
 
-                                                                                if (date_senzor) {
-                                                                                    pacientData = { ...pacientData, ...date_senzor }
-                                                                                }
+                                        if (date_senzor) {
+                                          pacientData = {
+                                            ...pacientData,
+                                            sensor_data: [{ ...date_senzor }],
+                                          };
+                                        }
 
-                                                                                resolve({ ok: true, message: pacientData });
+                                        conn.release();
 
-                                                                            }
-                                                                        );
-                                                                    });
-                                                            });
-                                                    });
-                                            });
-                                    });
-                            });
-                    });
-            });
-    });
-}
+                                        resolve({
+                                          ok: true,
+                                          message: pacientData,
+                                        });
+                                      }
+                                    );
+                                  }
+                                );
+                              }
+                            );
+                          }
+                        );
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+};
 
 export { isMedic, isAdmin, getUserType, getPacientData };
