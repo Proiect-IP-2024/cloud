@@ -83,14 +83,6 @@ export interface Diagnostic {
   data_emitere?: Date;
   alte_detalii?: string;
 }
-export interface Consult {
-  id_consult: number;
-  CNP_pacient: string;
-  data_consult: Date;
-  tensiune: number;
-  glicemie: number;
-  greutate: number;
-}
 
 
 
@@ -127,4 +119,16 @@ export interface Configurare_Alerta {
   puls_valoare_minima: number,
   umiditate_valoare_minima?: number,
   temperatura_valoare_minima?: number
+}
+
+
+export interface Tratamente {
+  id_tratament: number;
+  CNP_pacient: string;
+  tratament: string;
+  data_emitere?: Date;
+  alte_detalii?: string;
+  bifat_supraveghetor?: boolean;
+  data_ora_bifare?: Date;
+  observatii_ingrijitor?: string;
 }

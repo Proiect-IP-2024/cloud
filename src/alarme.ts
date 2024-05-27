@@ -51,7 +51,7 @@ const pool = mysql.createPool({
 
 
                 conn.query(
-                    `INSERT INTO Date_medicale SET ?`,
+                    `INSERT INTO Configurare_Alerta SET ?`,
                     {
                         id_configurare_alerta: userData.id_configurare_alerta,
                         id_medic: userData.id_medic,
@@ -134,52 +134,6 @@ app.get("/user/getAlarmHistory", async (req: Request, res: Response) => {
 
 
 
-app.get("/user/getDateMedicale", async (req: Request, res: Response) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
-
-        if (!token) {
-            return res.status(400).send("Invalid token");
-        }
-
-        jwt.verify(token, process.env.JWT_SECRET || "secret", (err, user: Pacient) => {
-            if (err) {
-                return res.status(403).send("Invalid token");
-            }
-
-            pool.getConnection((error: any, conn) => {
-                if (error) {
-                    return res.status(500).send("Connection error");
-                }
-
-                conn.query(
-                    `SELECT * FROM Date_medicale WHERE CNP_pacient = ?`,
-                    [user.CNP_pacient],
-                    async (err, rows) => {
-                        if (err) {
-                            conn.release();
-                            console.error(err);
-                            return res.sendStatus(500);
-                        }
-
-                        if (rows[0] === undefined) {
-                            conn.release();
-                            return res.status(500).send("Date medicale not found");
-                        }
-
-                        const medic = rows[0];
-
-                        conn.release();
-                        return res.status(200).send({ medic });
-                    }
-                );
-            });
-        });
-    } catch (e) {
-        console.error(e);
-        return res.sendStatus(500);
-    }
-});
 
 app.listen(PORT, () => {
     return console.log(`\nAUTH server is listening at PORT: ${PORT}`);
