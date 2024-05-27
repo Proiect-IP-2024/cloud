@@ -116,3 +116,15 @@ export interface Senzor_data {
     CUI?: string;
 }
 
+
+export interface Configurare_Alerta {
+  id_configurare_alerta: number,
+  id_medic: number,
+  CNP_pacient: string,
+  umiditate_valoare_maxima: number,
+  temperatura_valoare_maxima: number,
+  puls_valoare_maxima: number,
+  puls_valoare_minima: number,
+  umiditate_valoare_minima?: number,
+  temperatura_valoare_minima?: number
+}
