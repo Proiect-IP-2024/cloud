@@ -27,16 +27,18 @@ const pool = mysql.createPool({
 
 
 
-app.post("/user/addTratament", async (req: Request, res: Response) => {
+
+
+app.post("/user/addDateMedicale", async (req: Request, res: Response) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
-        const userData: { id_tratament: number, CNP_pacient: string, tratament: string, data_emitere: Date, alte_detalii: string  } | null = req.body?.userData;
+        const userData: { id_recomandare: number, CNP_pacient: string, tip_recomandare: string, durata_zilnica: number, alte_indicatii: string, tratamente: string} | null = req.body?.userData;
 
         if (!token) {
             return res.status(400).send("Invalid token");
         }
 
-        if (!(userData && userData?.id_tratament && userData?.CNP_pacient)) {
+        if (!(userData && userData?.id_recomandare && userData?.CNP_pacient)) {
             return res.status(400).send("Invalid data!");
         }
 
@@ -46,12 +48,14 @@ app.post("/user/addTratament", async (req: Request, res: Response) => {
             }
 
             conn.query(
-                `INSERT INTO Date_medicale SET ?`,
+                `INSERT INTO Recomadare_medic SET ?`,
                 {
-                    id_tratament: userData.id_tratament,
+                    id_recomandare: userData.id_recomandare,
                     CNP_pacient: userData.CNP_pacient,
-                    tratament: userData.tratament,
-                    data_emitere: userData.data_emitere
+                    tip_recomandare: userData.tip_recomandare,
+                    durata_zilnica: userData.durata_zilnica,
+                    alte_indicatii: userData.alte_indicatii,
+                    tratamente: userData.tratamente
                 },
                 async (err, rows) => {
                     if (err) {
@@ -61,53 +65,7 @@ app.post("/user/addTratament", async (req: Request, res: Response) => {
                     }
 
                     conn.release();
-                    return res.status(200).send("Tratament added");
-                }
-            );
-        });
-    } catch (e) {
-        console.error(e);
-        return res.sendStatus(500);
-    }
-});
-
-app.post("/user/updateTratament", async (req: Request, res: Response) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
-        const updateData: {
-            id_tratament: number,
-            bifat_supraveghetor: boolean,
-            data_ora_bifare: Date,
-            observatii_ingrijitor: string
-        } | null = req.body?.updateData;
-
-        if (!token) {
-            return res.status(400).send("Invalid token");
-        }
-
-        if (!(updateData && updateData.id_tratament !== undefined && updateData.bifat_supraveghetor !== undefined && updateData.data_ora_bifare && updateData.observatii_ingrijitor)) {
-            return res.status(400).send("Invalid data!");
-        }
-
-        // No need to verify the token for this particular example, but you can add it if needed.
-
-        pool.getConnection((error: any, conn) => {
-            if (error) {
-                return res.status(500).send("Connection error");
-            }
-
-            conn.query(
-                `UPDATE Tratamente SET bifat_supraveghetor = ?, data_ora_bifare = ?, observatii_ingrijitor = ? WHERE id_tratament = ?`,
-                [updateData.bifat_supraveghetor, updateData.data_ora_bifare, updateData.observatii_ingrijitor, updateData.id_tratament],
-                (err, results) => {
-                    if (err) {
-                        conn.release();
-                        console.error(err);
-                        return res.sendStatus(500);
-                    }
-
-                    conn.release();
-                    return res.status(200).send("Tratament updated");
+                    return res.status(200).send("Recomandare added");
                 }
             );
         });
@@ -118,7 +76,8 @@ app.post("/user/updateTratament", async (req: Request, res: Response) => {
 });
 
 
-app.get("/user/getTratamentByPacient", async (req: Request, res: Response) => {
+
+app.get("/user/getRecomandariByPacient", async (req: Request, res: Response) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
 
@@ -137,7 +96,7 @@ app.get("/user/getTratamentByPacient", async (req: Request, res: Response) => {
                 }
 
                 conn.query(
-                    `SELECT * FROM Tratamente WHERE CNP_pacient = ?`,
+                    `SELECT * FROM Recomadare_medic WHERE CNP_pacient = ?`,
                     [user.CNP_pacient],
                     async (err, rows) => {
                         if (err) {
@@ -148,13 +107,13 @@ app.get("/user/getTratamentByPacient", async (req: Request, res: Response) => {
 
                         if (rows[0] === undefined) {
                             conn.release();
-                            return res.status(500).send("Tratamente not found");
+                            return res.status(500).send("Recomandare not found");
                         }
 
-                        const tratament = rows[0];
+                        const recomandare = rows[0];
 
                         conn.release();
-                        return res.status(200).send({ tratament });
+                        return res.status(200).send({recomandare });
                     }
                 );
             });
@@ -164,9 +123,6 @@ app.get("/user/getTratamentByPacient", async (req: Request, res: Response) => {
         return res.sendStatus(500);
     }
 });
-
-
-
 
 
 app.listen(PORT, () => {
