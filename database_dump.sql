@@ -130,6 +130,23 @@ CREATE TABLE `Senzor_data` (
   `validitate_lumina` integer,
   `timestamp` date
 );
+*/
+
+/*
+"INSERT INTO senzori (puls, temperatura, concentratie_gaz, miscare, lumina)
+ VALUES (%d, %f, %f, %d, %d, %d)", humidity, temperature, gasConcentration, pirState, light, mappedPulse);
+*/
+CREATE TABLE `Senzori`(
+`ID_inregistrare` integer PRIMARY KEY,
+`CNP_pacient` varchar(13) NOT NULL,
+`umiditate` integer,
+`puls` integer,
+`temperatura` integer,
+`concentratie_gaz` float,
+`proximitate` boolean,
+`lumina` integer,
+`timestamp` datetime
+);
 
   
 

@@ -28,6 +28,22 @@ export interface Pacient {
   loc_munca_pacient: string;
 }
 
+export interface DateMedicale {
+  ID_date_medicale: number;
+  CNP_pacient: string;
+  alergii?: string;
+  consultatii_cardiologice?: string;
+}
+
+interface Consult {
+  id_consult: number;
+  CNP_pacient: string;
+  data_consult: Date;
+  tensiune?: number;
+  glicemie?: number;
+  greutate?: number;
+}
+
 export interface Recomandare
 {
  
