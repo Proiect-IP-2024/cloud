@@ -31,13 +31,14 @@ export interface Pacient {
 export interface Recomandare
 {
  
-  id_recomandare: number;
+  id_recomandare?: number;
   CNP_pacient: string;
   tip_recomandare: string;
   durata_zilnica?: number;
   alte_indicatii?: string;
   tratamente?: string;
 }
+
 export interface Medicamentatie
 {
   id_medicamentatie: number;

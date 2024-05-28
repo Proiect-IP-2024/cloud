@@ -1172,7 +1172,6 @@ app.post("/user/setRecomandareMedic", async (req: Request, res: Response) => {
     if (
       !(
         userData &&
-        userData?.id_recomandare &&
         userData?.CNP_pacient &&
         userData?.tip_recomandare &&
         userData?.durata_zilnica &&
@@ -1206,14 +1205,12 @@ app.post("/user/setRecomandareMedic", async (req: Request, res: Response) => {
           conn.query(
             `Insert INTO Recomadare_medic SET ? `,
             {
-              id_recomandare: userData.id_recomandare,
               CNP_pacient: userData.CNP_pacient,
               tip_recomandare: userData.tip_recomandare,
               durata_zilnica: userData.durata_zilnica,
               alte_indicatii: userData.alte_indicatii,
               tratamente: userData.tratamente,
             },
-            //[user.id],
             async (err, rows) => {
               if (err) {
                 conn.release();

@@ -91,7 +91,7 @@ CREATE TABLE `Schema_medicamentatie` (
 /* !!!! */
 
 CREATE TABLE `Recomadare_medic` (
-  `id_recomandare` integer PRIMARY KEY,
+  `id_recomandare` integer PRIMARY KEY AUTO_INCREMENT,
   `CNP_pacient` varchar(20) NOT NULL,
   `tip_recomandare` varchar(50) NOT NULL,
   `durata_zilnica` integer,
