@@ -33,14 +33,6 @@ CREATE TABLE `Pacient` (
   `profesie_pacient` varchar(30),
   `loc_munca_pacient` text
 );
-/*
-CREATE TABLE `Alerta_pacient` (
-  `ID_alerta_pacient` integer PRIMARY KEY,
-  `CNP_pacient` varchar(13) NOT NULL,
-  `parafa_medic` varchar(10) NOT NULL,
-  `mesaj_alerta` text,
-  `data_alerta` date
-);*/
 
 CREATE TABLE `Date_medicale` (
   `ID_date_medicale` integer PRIMARY KEY,
@@ -91,7 +83,7 @@ CREATE TABLE `Schema_medicamentatie` (
 /* !!!! */
 
 CREATE TABLE `Recomadare_medic` (
-  `id_recomandare` integer PRIMARY KEY AUTO_INCREMENT,
+  `id_recomandare` integer PRIMARY KEY,
   `CNP_pacient` varchar(20) NOT NULL,
   `tip_recomandare` varchar(50) NOT NULL,
   `durata_zilnica` integer,
@@ -100,25 +92,33 @@ CREATE TABLE `Recomadare_medic` (
 );
 
 
-CREATE TABLE `Alerta_automata` (
-  `id_alerta_automata` integer PRIMARY KEY,
+CREATE TABLE `Configurare_Alerta`(
+  `id_configurare_alerta` integer PRIMARY KEY AUTO_INCREMENT,
+  `id_medic` integer NOT NULL,
   `CNP_pacient` varchar(13) NOT NULL,
-  `tip_senzor` varchar(20),
-  `mesaj_automat` text,
-  `data_alerta_automata` date
+  `umiditate_valoare_maxima` float NOT NULL,
+  `temperatura_valoare_maxima` float NOT NULL,
+  `puls_valoare_maxima` float NOT NULL,
+  `puls_valoare_minima` float NOT NULL,
+  `umiditate_valoare_minima` float,
+  `temperatura_valoare_minima` float
 );
 
-CREATE TABLE `Alerta_Supraveghetor` (
-  `id_alerta_upraveghetor` integer PRIMARY KEY,
-  `CNP_pacient` varchar(13) NOT NULL,
-  `data_si_ora_alertei` datetime,
-  `bifat` boolean,
-  `data_si_ora_bifata` datetime
-);
 
+CREATE TABLE `Istoric_Alerte_automate`(
+  `id_alerta_automata` integer PRIMARY KEY AUTO_INCREMENT,
+  `data_alerta_automata` datetime NOT NULL,
+  `data_rezolvare_alerta` datetime,
+  `CNP_pacient` varchar(13) NOT NULL,
+  `umiditate` float,
+  `temperatura` float,
+  `puls` float,
+  `resolved` boolean,
+  `resolved_by` integer
+);
 
 CREATE TABLE `Senzor_data` (
-  `ID_senzor` integer PRIMARY KEY,
+  `ID_senzor` integer PRIMARY KEY AUTO_INCREMENT,
   `CNP_pacient` varchar(13) NOT NULL,
   `valoare_puls` float,
   `validitate_puls` integer,
@@ -130,26 +130,6 @@ CREATE TABLE `Senzor_data` (
   `validitate_lumina` integer,
   `timestamp` date
 );
-*/
-
-/*
-"INSERT INTO senzori (puls, temperatura, concentratie_gaz, miscare, lumina)
- VALUES (%d, %f, %f, %d, %d, %d)", humidity, temperature, gasConcentration, pirState, light, mappedPulse);
-*/
-CREATE TABLE `Senzori`(
-`ID_inregistrare` integer PRIMARY KEY,
-`CNP_pacient` varchar(13) NOT NULL,
-`umiditate` integer,
-`puls` integer,
-`temperatura` integer,
-`concentratie_gaz` float,
-`proximitate` boolean,
-`lumina` integer,
-`timestamp` datetime
-);
-
-  
-
 
 ALTER TABLE `Admin` ADD FOREIGN KEY (`id`) REFERENCES `Users` (`id`);
 
@@ -167,8 +147,6 @@ ALTER TABLE `Date_medicale` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient`
 
 ALTER TABLE `Recomadare_medic` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
-ALTER TABLE `Alerta_Supraveghetor` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
-
 ALTER TABLE `Diagnostic` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
 ALTER TABLE `Tratamente` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
@@ -177,9 +155,15 @@ ALTER TABLE `Schema_medicamentatie` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `
 
 ALTER TABLE `Consult` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
 
-ALTER TABLE `Alerta_automata` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
-
 ALTER TABLE `Senzor_data` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
+
+ALTER TABLE `Configurare_Alerta` ADD FOREIGN KEY (`id_medic`) REFERENCES `Medic` (`id`);
+
+ALTER TABLE `Configurare_Alerta` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
+
+ALTER TABLE `Istoric_Alerte_automate` ADD FOREIGN KEY (`CNP_pacient`) REFERENCES `Pacient` (`CNP_pacient`);
+
+ALTER TABLE `Istoric_Alerte_automate` ADD FOREIGN KEY (`resolved_by`) REFERENCES `Ingrijitor` (`id`);
 
 INSERT INTO `Users` (`id`, `first_name`, `last_name`, `email`, `password_hash`) VALUES
 (2, 'test', 'test', 'test@test.com', '$2b$10$dfDF6kGjZpMf.Yqt43xE.emJobspEO3DO.4Py.WzVi403.I49jRy6'),
@@ -201,10 +185,6 @@ INSERT INTO `Admin` (`id`) VALUES
 
 INSERT INTO `Ingrijitor` (`id`) VALUES
 (6);
-INSERT INTO `Alerta_automata` (`id_alerta_automata`, `CNP_pacient`, `tip_senzor`, `mesaj_automat`, `data_alerta_automata`) VALUES
-(2, '1234567890123', 'ultrasonic', '.i.', '2024-05-16');
-INSERT INTO `Alerta_Supraveghetor` (`id_alerta_upraveghetor`, `CNP_pacient`, `data_si_ora_alertei`, `bifat`, `data_si_ora_bifata`) VALUES
-(1, '1234567890123', '2024-05-31 01:47:35', NULL, NULL);
 INSERT INTO `Consult` (`id_consult`, `CNP_pacient`, `data_consult`, `tensiune`, `glicemie`, `greutate`) VALUES
 (1, '1234567890123', '2024-05-16', 5, 23, 65);
 INSERT INTO `Date_medicale` (`ID_date_medicale`, `CNP_pacient`, `alergii`, `consultatii_cardiologice`) VALUES
@@ -215,8 +195,7 @@ INSERT INTO `Recomadare_medic` (`id_recomandare`, `CNP_pacient`, `tip_recomandar
 (1, '1234567890123', 'top', 2, 'sex', 'nu');
 INSERT INTO `Schema_medicamentatie` (`id_medicament`, `CNP_pacient`, `nume_medicament`, `frecventa`) VALUES
 (1, '1234567890123', 'xanax', '3');
-INSERT INTO `Senzor_data` (`ID_senzor`, `CNP_pacient`, `valoare_puls`, `validitate_puls`, `valoare_temp`, `validitate_temp`, `valoare_umiditate`, `validitate_umiditate`, `valoare_lumina`, `validitate_lumina`, `timestamp`) VALUES
-(1, '1234567890123', 123, 1, 23, 1, 13, 1, 0.2, 1, '2024-05-24');
+INSERT INTO `Senzor_data` (`CNP_pacient`, `valoare_puls`, `validitate_puls`, `valoare_temp`, `validitate_temp`, `valoare_umiditate`, `validitate_umiditate`, `valoare_lumina`, `validitate_lumina`, `timestamp`) VALUES
+('1234567890123', 123, 1, 23, 1, 13, 1, 0.2, 1, '2024-05-24');
 INSERT INTO `Tratamente` (`id_tratament`, `CNP_pacient`, `tratament`, `data_emitere`, `alte_detalii`, `bifat_supraveghetor`, `data_ora_bifare`, `observatii_ingrijitor`) VALUES
 (1, '1234567890123', '2', '2024-05-23', 'sadfg', 1, '2024-05-22 01:38:59', 'sdafgh');
-
