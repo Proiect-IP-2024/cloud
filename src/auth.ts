@@ -35,6 +35,8 @@ const pool = mysql.createPool({
   database: process.env.MYSQL_DATABASE,
 });
 
+console.log("test", process.env.MYSQL_HOST, process.env.MYSQL_USER, process.env.MYSQL_PASSWORD, process.env.MYSQL_DATABASE);
+
 app.post("/user/createUser", async (req: Request, res: Response) => {
   try {
     const userData: User | null = req.body?.userData;
