@@ -9,6 +9,7 @@
     "restart-db": "docker compose down && docker compose up -d",
     "stop-db": "docker compose down",
     "build": "npx tsc",
+    "start": "cp .env .dist/ && node .dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
