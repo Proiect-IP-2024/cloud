@@ -423,4 +423,32 @@ const getPatientPulse = (
     }
   );
 };
-export { isMedic, isAdmin, getUserType, getPacientData, getPatientPulse };
+
+const getCnpPacientById = (pacientId: string, conn: any) => {
+  return new Promise<Response>((resolve, reject) => {
+    conn.query(
+      `SELECT CNP_pacient FROM Pacient WHERE id = ?`,
+      [pacientId],
+      (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(err);
+        }
+
+        if (rows[0] === undefined) {
+          reject({ ok: false });
+        }
+        resolve({ ok: true, message: rows[0].CNP_pacient });
+      }
+    );
+  });
+};
+
+export {
+  isMedic,
+  isAdmin,
+  getUserType,
+  getPacientData,
+  getPatientPulse,
+  getCnpPacientById,
+};

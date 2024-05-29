@@ -13,8 +13,14 @@ import {
   User,
   UserToken,
   AlarmsConfig,
+  ConfigurareAlerta,
 } from "./modules/interfaces";
-import { getUserType, isMedic, getPacientData } from "./utils/utils";
+import {
+  getUserType,
+  isMedic,
+  getPacientData,
+  getCnpPacientById,
+} from "./utils/utils";
 
 const app = express();
 
@@ -1101,7 +1107,8 @@ app.delete("/user/deleteIngrijitor", async (req: Request, res: Response) => {
 app.post("/user/addMedicToPacient", async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const userData: { id_pacient: number } | null = req.body?.userData;
+    const userData: { id_pacient: string } | null = req.body?.userData;
+    const senzor_data: ConfigurareAlerta | null = req.body?.senzor_data;
 
     if (!token) {
       return res.status(400).send("Invalid token");
@@ -1124,20 +1131,79 @@ app.post("/user/addMedicToPacient", async (req: Request, res: Response) => {
             return res.status(500).send("Connection error");
           }
 
-          conn.query(
-            `UPDATE Pacient SET id_medic = ? WHERE id = ? `,
-            [user.id, userData.id_pacient],
-            async (err, rows) => {
-              if (err) {
-                conn.release();
-                console.error(err);
-                return res.sendStatus(500);
-              }
+          try {
+            const getPacientDataResponse = await getCnpPacientById(
+              userData.id_pacient,
+              conn
+            );
 
+            if (!getPacientDataResponse.ok) {
               conn.release();
-              return res.status(200).send("Medic added to pacient");
+              res.status(500).send("");
             }
-          );
+
+            conn.query(
+              `UPDATE Pacient SET id_medic = ? WHERE id = ? `,
+              [user.id, userData.id_pacient],
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+
+                conn.query(
+                  `Select * from Configurare_Alerta WHERE CNP_pacient = ?`,
+                  [getPacientDataResponse.message],
+                  async (err, rows) => {
+                    if (err) {
+                      conn.release();
+                      console.error(err);
+                      return res.sendStatus(500);
+                    }
+
+                    if (rows[0] !== undefined) {
+                      conn.release();
+                      return res.sendStatus(500);
+                    }
+
+                    conn.query(
+                      `Insert INTO Configurare_Alerta SET ? `,
+                      [
+                        {
+                          id_configurare_alerta:
+                            senzor_data.id_configurare_alerta,
+                          id_medic: user.id,
+                          CNP_pacient: getPacientDataResponse.message,
+                          umiditate_valoare_maxima:
+                            senzor_data.umiditate_valoare_maxima,
+                          temperatura_valoare_maxima:
+                            senzor_data.temperatura_valoare_maxima,
+                          puls_valoare_maxima: senzor_data.puls_valoare_maxima,
+                          puls_valoare_minima: senzor_data.puls_valoare_minima,
+                          umiditate_valoare_minima:
+                            senzor_data.umiditate_valoare_minima,
+                          temperatura_valoare_minima:
+                            senzor_data.temperatura_valoare_minima,
+                        },
+                      ],
+                      async (err, rows) => {
+                        if (err) {
+                          console.error(err);
+                          return res.sendStatus(500);
+                        }
+                        conn.release();
+                        return res.status(200).send("Medic added to pacient");
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          } catch (e) {
+            console.error("ASD: ", e);
+            return res.sendStatus(500);
+          }
         });
       }
     );
@@ -2242,7 +2308,7 @@ app.post(
         }
       );
     } catch (e) {
-      console.log(e);
+      console.log("TEST: ", e);
     }
   }
 );
