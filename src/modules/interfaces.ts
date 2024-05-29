@@ -35,14 +35,6 @@ export interface DateMedicale {
   consultatii_cardiologice?: string;
 }
 
-interface Consult {
-  id_consult: number;
-  CNP_pacient: string;
-  data_consult: Date;
-  tensiune?: number;
-  glicemie?: number;
-  greutate?: number;
-}
 
 export interface Recomandare
 {
@@ -117,3 +109,12 @@ export interface Senzor_data {
     CUI?: string;
 }
 
+
+export interface AlarmsConfig {
+  puls_max: number;
+  puls_min: number;
+  temperatura_max: number;
+  temperatura_min: number;
+  umiditate_max: number;
+  umiditate_min: number;
+}

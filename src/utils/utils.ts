@@ -322,9 +322,9 @@ const getPacientData = async (pacientID: string, conn: any) => {
                                 conn.query(
                                   `SELECT
                                   Pacient.CNP_pacient,
-                                  Istoric_Alerte_automate.*
+                                  Configurare_Alerta.*
                                   FROM Pacient
-                                  JOIN Istoric_Alerte_automate ON Pacient.CNP_pacient = Istoric_Alerte_automate.CNP_pacient
+                                  JOIN Configurare_Alerta ON Pacient.CNP_pacient = Configurare_Alerta.CNP_pacient
                                   WHERE Pacient.id = ?
                                   `,
                                   [pacientID],

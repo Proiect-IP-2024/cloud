@@ -12,6 +12,7 @@ import {
   Tratamente,
   User,
   UserToken,
+  AlarmsConfig,
 } from "./modules/interfaces";
 import { getUserType, isMedic, getPacientData } from "./utils/utils";
 
@@ -36,7 +37,13 @@ const pool = mysql.createPool({
   database: process.env.MYSQL_DATABASE,
 });
 
-console.log("test", process.env.MYSQL_HOST, process.env.MYSQL_USER, process.env.MYSQL_PASSWORD, process.env.MYSQL_DATABASE);
+console.log(
+  "test",
+  process.env.MYSQL_HOST,
+  process.env.MYSQL_USER,
+  process.env.MYSQL_PASSWORD,
+  process.env.MYSQL_DATABASE
+);
 
 app.post("/user/createUser", async (req: Request, res: Response) => {
   try {
@@ -250,10 +257,12 @@ app.get("/user/getUserData", async (req: Request, res: Response) => {
                 return res.status(500).send("User not found");
               }
 
-              const user = rows[0];
+              const userResponse = rows[0];
 
               conn.release();
-              return res.status(200).send({ user });
+              return res
+                .status(200)
+                .send({ user: { ...userResponse, user_id: user.id } });
             }
           );
         });
@@ -2055,7 +2064,7 @@ app.get(
   async (req: Request, res: Response) => {
     try {
       const token = req.headers.authorization?.split(" ")[1];
-      
+
       if (!token) {
         return res.status(400).send("Invalid token");
       }
@@ -2147,6 +2156,96 @@ app.post("/user/getPacientProfile", async (req: Request, res: Response) => {
     return res.sendStatus(500);
   }
 });
+
+app.post(
+  "/pacient/setAlarmConfigToPacient",
+  async (req: Request, res: Response) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      const userData: {
+        pacientID: string;
+        CNP_pacient: string;
+        alarms: AlarmsConfig;
+      } | null = req.body?.userData;
+
+      if (!token) {
+        return res.status(400).send("Invalid token");
+      }
+
+      if (
+        !(
+          userData &&
+          userData.alarms &&
+          userData.CNP_pacient &&
+          userData.pacientID
+        )
+      ) {
+        return res.status(400).send("Invalid data!");
+      }
+
+      jwt.verify(
+        token,
+        process.env.JWT_SECRET || "secret",
+        async (err, user: UserToken) => {
+          if (err) {
+            return res.status(403).send("Invalid token");
+          }
+
+          pool.getConnection(async (error: any, conn) => {
+            if (error) {
+              return res.status(500).send("Connection error");
+            }
+
+            const isMedicResp = await isMedic(user, conn);
+
+            if (!isMedicResp) {
+              conn.release();
+              return res.status(403).send("User is not medic");
+            }
+
+            conn.query(
+              `DELETE FROM Configurare_Alerta WHERE CNP_pacient = ?`,
+              [userData.CNP_pacient],
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+              }
+            );
+
+            conn.query(
+              `INSERT INTO Configurare_Alerta SET ?`,
+              {
+                id_medic: user.id,
+                CNP_pacient: userData.CNP_pacient,
+                umiditate_valoare_maxima: userData.alarms.umiditate_max,
+                umiditate_valoare_minima: userData.alarms.umiditate_min,
+                temperatura_valoare_maxima: userData.alarms.temperatura_max,
+                temperatura_valoare_minima: userData.alarms.temperatura_min,
+                puls_valoare_maxima: userData.alarms.puls_max,
+                puls_valoare_minima: userData.alarms.puls_min,
+              },
+              async (err, rows) => {
+                if (err) {
+                  conn.release();
+                  console.error(err);
+                  return res.sendStatus(500);
+                }
+
+                conn.release();
+                return res.status(200).send("Alarms added");
+              }
+            );
+          });
+        }
+      );
+    } catch (e) {
+      console.log(e);
+    }
+  }
+);
 
 app.listen(PORT, () => {
   return console.log(`\nAUTH server is listening at PORT: ${PORT}`);
