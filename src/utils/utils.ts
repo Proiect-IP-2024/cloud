@@ -148,6 +148,10 @@ const getPacientData = async (pacientID: string, conn: any) => {
   var pacientData = null;
 
   return new Promise<Response>((resolve, reject) => {
+    if (!pacientID) {
+      reject({ ok: false, status: 500, message: "User not found" });
+    }
+
     conn.query(
       `SELECT 
         Pacient.*, 
@@ -225,7 +229,7 @@ const getPacientData = async (pacientID: string, conn: any) => {
                   `,
                   [pacientID],
                   async (errr, rows_diagnostic) => {
-                    if (err) {
+                    if (errr) {
                       conn.release();
                       console.error(err);
                       reject({ ok: false, status: 500 });
@@ -250,7 +254,7 @@ const getPacientData = async (pacientID: string, conn: any) => {
                     `,
                       [pacientID],
                       async (errr, rows_tratamente) => {
-                        if (err) {
+                        if (errr) {
                           conn.release();
                           console.error(err);
                           reject({ ok: false, status: 500 });
@@ -275,7 +279,7 @@ const getPacientData = async (pacientID: string, conn: any) => {
                         `,
                           [pacientID],
                           async (errr, rows_medicamentatie) => {
-                            if (err) {
+                            if (errr) {
                               conn.release();
                               console.error(err);
                               reject({ ok: false, status: 500 });
@@ -300,7 +304,7 @@ const getPacientData = async (pacientID: string, conn: any) => {
                             `,
                               [pacientID],
                               async (errr, rows_recomandare) => {
-                                if (err) {
+                                if (errr) {
                                   conn.release();
                                   console.error(err);
                                   reject({ ok: false, status: 500 });
@@ -318,14 +322,14 @@ const getPacientData = async (pacientID: string, conn: any) => {
                                 conn.query(
                                   `SELECT
                                   Pacient.CNP_pacient,
-                                  Alerta_automata.*
+                                  Istoric_Alerte_automate.*
                                   FROM Pacient
-                                  JOIN Alerta_automata ON Pacient.CNP_pacient = Alerta_automata.CNP_pacient
+                                  JOIN Istoric_Alerte_automate ON Pacient.CNP_pacient = Istoric_Alerte_automate.CNP_pacient
                                   WHERE Pacient.id = ?
                                   `,
                                   [pacientID],
                                   async (errr, rows_alerta) => {
-                                    if (err) {
+                                    if (errr) {
                                       conn.release();
                                       console.error(err);
                                       reject({ ok: false, status: 500 });
@@ -350,7 +354,7 @@ const getPacientData = async (pacientID: string, conn: any) => {
                                         `,
                                       [pacientID],
                                       async (errr, rows_senzor) => {
-                                        if (err) {
+                                        if (errr) {
                                           conn.release();
                                           console.error(err);
                                           reject({ ok: false, status: 500 });
@@ -397,6 +401,11 @@ const getPatientPulse = (
   conn: Connection,
   socket: BroadcastOperator<DefaultEventsMap, any>
 ) => {
+  if (!socket) {
+    console.log(socket);
+    return false;
+  }
+
   conn.query(
     "SELECT valoare_puls, valoare_temp, valoare_umiditate, valoare_lumina FROM Senzor_data WHERE CNP_pacient = ? ORDER BY timestamp DESC LIMIT 1",
     [CNP_pacient],

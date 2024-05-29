@@ -22,6 +22,7 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
+    "@types/mysql": "^2.15.26",
     "@types/socket.io": "^3.0.2",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
