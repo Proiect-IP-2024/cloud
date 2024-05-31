@@ -1280,6 +1280,8 @@ app.post("/user/setRecomandareMedic", async (req: Request, res: Response) => {
             return res.status(403).send("User is not medic");
           }
 
+          console.log(userData.CNP_pacient);
+
           conn.query(
             `Insert INTO Recomadare_medic SET ? `,
             {
@@ -2312,6 +2314,65 @@ app.post(
     }
   }
 );
+
+app.post("/pacient/getIstoricAlarme", async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(" ")[1];
+
+    const userData: {
+      CNP_pacient: string;
+    } | null = req.body?.userData;
+
+    if (!token) {
+      return res.status(400).send("Invalid token");
+    }
+
+    if (!(userData && userData.CNP_pacient)) {
+      return res.status(400).send("Invalid data!");
+    }
+
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secret",
+      async (err, user: UserToken) => {
+        if (err) {
+          return res.status(403).send("Invalid token");
+        }
+
+        pool.getConnection(async (error: any, conn) => {
+          if (error) {
+            return res.status(500).send("Connection error");
+          }
+
+          conn.query(
+            `SELECT * FROM Istoric_Alerte_automate WHERE CNP_pacient = ?`,
+            [userData.CNP_pacient],
+            async (err, rows) => {
+              if (err) {
+                conn.release();
+                console.error(err);
+                return res.sendStatus(500);
+              }
+
+              if (rows[0] === undefined) {
+                conn.release();
+                return res.status(200).send([]);
+              }
+
+              const alarms = rows;
+              conn.release();
+              return res.status(200).send({ alarms: [...alarms] });
+            }
+          );
+        });
+      }
+    );
+  } catch (e) {
+    console.log(e);
+    res.sendStatus(500);
+  }
+});
 
 app.listen(PORT, () => {
   return console.log(`\nAUTH server is listening at PORT: ${PORT}`);

@@ -235,13 +235,15 @@ const getPacientData = async (pacientID: string, conn: any) => {
                       reject({ ok: false, status: 500 });
                     }
 
-                    const date_diagnostic = rows_diagnostic[0];
+                    if (rows_diagnostic[0] !== undefined) {
+                      const date_diagnostic = rows_diagnostic;
 
-                    if (date_diagnostic) {
-                      pacientData = {
-                        ...pacientData,
-                        diagnostic: { ...date_diagnostic },
-                      };
+                      if (date_diagnostic) {
+                        pacientData = {
+                          ...pacientData,
+                          diagnostic: date_diagnostic,
+                        };
+                      }
                     }
 
                     conn.query(
@@ -260,13 +262,15 @@ const getPacientData = async (pacientID: string, conn: any) => {
                           reject({ ok: false, status: 500 });
                         }
 
-                        const date_tratamente = rows_tratamente[0];
+                        if (rows_tratamente[0] !== undefined) {
+                          const date_tratamente = rows_tratamente[0];
 
-                        if (date_tratamente) {
-                          pacientData = {
-                            ...pacientData,
-                            tratament: { ...date_tratamente },
-                          };
+                          if (date_tratamente) {
+                            pacientData = {
+                              ...pacientData,
+                              tratament: date_tratamente,
+                            };
+                          }
                         }
 
                         conn.query(
@@ -285,13 +289,14 @@ const getPacientData = async (pacientID: string, conn: any) => {
                               reject({ ok: false, status: 500 });
                             }
 
-                            const date_medicamentatie = rows_medicamentatie[0];
-
-                            if (date_medicamentatie) {
-                              pacientData = {
-                                ...pacientData,
-                                medicament: { ...date_medicamentatie },
-                              };
+                            if (rows_medicamentatie[0] !== undefined) {
+                              const date_medicamentatie = rows_medicamentatie;
+                              if (date_medicamentatie) {
+                                pacientData = {
+                                  ...pacientData,
+                                  medicament: date_medicamentatie,
+                                };
+                              }
                             }
 
                             conn.query(
@@ -310,13 +315,15 @@ const getPacientData = async (pacientID: string, conn: any) => {
                                   reject({ ok: false, status: 500 });
                                 }
 
-                                const date_recomandare = rows_recomandare[0];
+                                if (rows_recomandare[0] !== undefined) {
+                                  const date_recomandare = rows_recomandare;
 
-                                if (date_recomandare) {
-                                  pacientData = {
-                                    ...pacientData,
-                                    recomandare: { ...date_recomandare },
-                                  };
+                                  if (date_recomandare) {
+                                    pacientData = {
+                                      ...pacientData,
+                                      recomandare: date_recomandare,
+                                    };
+                                  }
                                 }
 
                                 conn.query(
